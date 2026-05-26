@@ -330,12 +330,7 @@ data.correo
 });
 
 // ACTUALIZAR CONTADORES
-setTimeout(() => {
-
-    actualizarTotal();
-    actualizarEstadisticas();
-
-}, 300);
+await actualizarEstadisticas();
 }
 
 cargarReportes();
