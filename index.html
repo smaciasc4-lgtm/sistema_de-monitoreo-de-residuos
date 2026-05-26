@@ -25,6 +25,10 @@
         <div class="panel">
 
             <h2>📌 Reportar Residuo</h2>
+            <input
+type="email"
+id="correo"
+placeholder="Ingrese su correo">
 
             <select id="tipo">
                 <option>Orgánico</option>
@@ -67,6 +71,7 @@
 
             <thead>
                 <tr>
+                    <th>Correo</th>
                     <th>Tipo</th>
                     <th>Descripción</th>
                     <th>Ubicación</th>
@@ -83,7 +88,192 @@
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
-    <script src="script.js"></script>
+    <script type="module">
+
+import { initializeApp }
+from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+
+import {
+getFirestore,
+collection,
+addDoc,
+getDocs
+}
+from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+
+// Firebase
+const firebaseConfig = {
+
+apiKey: "AIzaSyBqji_jgSR7htNpSyOSWhYsPe9N8mGqlZo",
+
+authDomain: "mapa-residuos.firebaseapp.com",
+
+projectId: "mapa-residuos",
+
+storageBucket: "mapa-residuos.firebasestorage.app",
+
+messagingSenderId: "813997554353",
+
+appId: "1:813997554353:web:4d7be3f4870eb468bb4090",
+
+measurementId: "G-7K7NYG6TKT"
+
+};
+
+// Inicializar
+const app = initializeApp(firebaseConfig);
+
+const db = getFirestore(app);
+
+// MAPA
+var map = L.map('map').setView([-0.2299, -78.5249], 13);
+
+// OpenStreetMap
+L.tileLayer(
+'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+{
+attribution:'OpenStreetMap'
+}).addTo(map);
+
+// Contador
+let total = 0;
+
+// Cargar reportes
+async function cargarReportes(){
+
+const querySnapshot =
+await getDocs(collection(db, "reportes"));
+
+querySnapshot.forEach((doc) => {
+
+const data = doc.data();
+
+agregarTabla(
+data.correo,
+data.tipo,
+data.descripcion,
+data.lat,
+data.lon
+);
+
+L.marker([data.lat, data.lon])
+.addTo(map)
+.bindPopup(
+"<b>" + data.tipo + "</b><br>" +
+data.descripcion + "<br>" +
+data.correo
+);
+
+total++;
+
+document.getElementById("total")
+.innerHTML = total;
+
+});
+
+}
+
+cargarReportes();
+
+// FUNCIÓN
+window.obtenerUbicacion = async function(){
+
+let correo =
+document.getElementById("correo").value;
+
+let tipo =
+document.getElementById("tipo").value;
+
+let descripcion =
+document.getElementById("descripcion").value;
+
+if(!correo){
+
+alert("Ingrese correo");
+
+return;
+
+}
+
+navigator.geolocation.getCurrentPosition(
+
+async function(position){
+
+let lat = position.coords.latitude;
+
+let lon = position.coords.longitude;
+
+// Guardar en Firebase
+await addDoc(
+collection(db, "reportes"),
+{
+correo,
+tipo,
+descripcion,
+lat,
+lon,
+fecha:new Date()
+}
+);
+
+// Marcador
+L.marker([lat, lon])
+.addTo(map)
+.bindPopup(
+"<b>" + tipo + "</b><br>" +
+descripcion + "<br>" +
+correo
+);
+
+// Tabla
+agregarTabla(
+correo,
+tipo,
+descripcion,
+lat,
+lon
+);
+
+// Contador
+total++;
+
+document.getElementById("total")
+.innerHTML = total;
+
+alert("Reporte guardado online");
+
+}
+
+);
+
+}
+
+// TABLA
+function agregarTabla(
+correo,
+tipo,
+descripcion,
+lat,
+lon
+){
+
+let tabla =
+document.getElementById("tablaReportes");
+
+let fila = `
+<tr>
+<td>${correo}</td>
+<td>${tipo}</td>
+<td>${descripcion}</td>
+<td>${lat.toFixed(4)}, ${lon.toFixed(4)}</td>
+</tr>
+`;
+
+tabla.innerHTML += fila;
+
+}
+
+</script>
 
 </body>
 
