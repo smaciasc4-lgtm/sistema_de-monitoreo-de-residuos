@@ -36,31 +36,104 @@ placeholder="Ingrese su correo">
                 <option>Reciclable</option>
             </select>
 
-            <textarea
-            id="descripcion"
-            placeholder="Describe el problema">
-            </textarea>
+           <textarea
+id="descripcion"
+placeholder="Describe el problema"></textarea>
 
             <button onclick="obtenerUbicacion()">
                 Reportar Punto
             </button>
 
-            <div class="estadisticas">
+<div class="estadisticas">
 
-                <h3>📊 Estadísticas</h3>
+    <h3>📊 Estadísticas</h3>
 
-                <p>Total Reportes:
-                    <span id="total">0</span>
-                </p>
+    <p>
+        📌 Total Reportes:
+        <span id="total">0</span>
+    </p>
 
-            </div>
+    <p>
+        🌱 Orgánicos:
+        <span id="organicos">0</span>
+    </p>
 
-        </div>
+    <p>
+        🏭 Inorgánicos:
+        <span id="inorganicos">0</span>
+    </p>
 
-        <!-- MAPA -->
-        <div id="map"></div>
+    <p>
+        ♻ Reciclables:
+        <span id="reciclables">0</span>
+    </p>
 
-    </div>
+<button onclick="abrirAnalisis()">
+    📊 Ver Análisis Ambiental
+</button>
+
+
+    
+<button onclick="abrirEducacion()">
+    📚 Educación Ambiental 
+</button>
+
+</div>
+
+</div>
+
+<!-- MAPA -->
+<div id="map"></div>
+
+</div>
+
+<!-- PANEL DE ANALISIS -->
+<!-- PANEL ANALISIS -->
+<div id="panelAnalisis" class="panel-analisis" style="display:none;">
+
+<h2>🌎 Análisis Ambiental</h2>
+
+<p id="mensajeIA"></p>
+
+<canvas
+id="graficoResiduos"
+style="
+width:400px;
+height:400px;
+margin:auto;
+display:block;
+">
+</canvas>
+
+</div>
+
+<!-- PANEL EDUCACION -->
+<div id="panelEducacion" class="panel-analisis" style="display:none;">
+
+<h2>📚 Educación Ambiental</h2>
+
+<p>
+♻ Los residuos sólidos son materiales desechados que pueden afectar el medio ambiente si no se manejan correctamente.
+</p>
+
+<p>
+🌱 Los residuos orgánicos pueden convertirse en compost y ayudar a fertilizar plantas.
+</p>
+
+<p>
+🏭 Los residuos inorgánicos como plástico y vidrio deben reciclarse para reducir contaminación.
+</p>
+
+<p>
+🌎 La correcta separación de residuos ayuda a disminuir la contaminación del suelo, agua y aire.
+</p>
+
+<p>
+🤖 Recomendación IA:
+La comunidad debería implementar puntos ecológicos y campañas de reciclaje.
+</p>
+
+</div>
 
     <!-- TABLA -->
     <div class="tabla-contenedor">
@@ -75,6 +148,7 @@ placeholder="Ingrese su correo">
                     <th>Tipo</th>
                     <th>Descripción</th>
                     <th>Ubicación</th>
+                    <th>Acción</th>
                 </tr>
             </thead>
 
@@ -87,6 +161,7 @@ placeholder="Ingrese su correo">
     </div>
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script type="module">
 
@@ -124,9 +199,45 @@ measurementId: "G-7K7NYG6TKT"
 const app = initializeApp(firebaseConfig);
 
 const db = getFirestore(app);
+function actualizarEstadisticas(){
+
+const filas = document.querySelectorAll("#tablaReportes tr");
+
+let organicos = 0;
+let inorganicos = 0;
+let reciclables = 0;
+
+filas.forEach(fila => {
+
+let tipo = fila.children[1].innerText;
+
+if(tipo === "Orgánico"){
+    organicos++;
+}
+
+if(tipo === "Inorgánico"){
+    inorganicos++;
+}
+
+if(tipo === "Reciclable"){
+    reciclables++;
+}
+
+});
+
+document.getElementById("organicos").innerText = organicos;
+document.getElementById("inorganicos").innerText = inorganicos;
+document.getElementById("reciclables").innerText = reciclables;
+
+}
+
 function actualizarTotal(){
-const filas = document.querySelectorAll("#tablaReportes tr").length;
-document.getElementById("total").innerHTML = filas;
+
+const total =
+document.querySelectorAll("#tablaReportes tr").length;
+
+document.getElementById("total").innerText = total;
+
 }
 
 // MAPA
@@ -164,7 +275,28 @@ data.lon
 );
 
 // MAPA
-L.marker([data.lat, data.lon])
+let color = "";
+
+if(data.tipo === "Orgánico"){
+    color = "yellow";
+}
+
+if(data.tipo === "Inorgánico"){
+    color = "red";
+}
+
+if(data.tipo === "Reciclable"){
+    color = "green";
+}
+
+L.circleMarker([data.lat, data.lon], {
+    radius: 10,
+    fillColor: color,
+    color: "#000",
+    weight: 1,
+    opacity: 1,
+    fillOpacity: 0.8
+})
 .addTo(map)
 .bindPopup(
 "<b>" + data.tipo + "</b><br>" +
@@ -177,7 +309,8 @@ data.correo
 });
 actualizarTotal();
 setTimeout(() => {
-    actualizarTotal();
+   actualizarTotal();
+actualizarEstadisticas();
 }, 500);
 }
 
@@ -214,14 +347,34 @@ fecha: new Date()
 );
 
 // MAPA
-L.marker([lat, lon])
+let color = "";
+
+if(tipo === "Orgánico"){
+    color = "yellow";
+}
+
+if(tipo === "Inorgánico"){
+    color = "red";
+}
+
+if(tipo === "Reciclable"){
+    color = "green";
+}
+
+L.circleMarker([lat, lon], {
+    radius: 10,
+    fillColor: color,
+    color: "#000",
+    weight: 1,
+    opacity: 1,
+    fillOpacity: 0.8
+})
 .addTo(map)
 .bindPopup(
 "<b>" + tipo + "</b><br>" +
 descripcion + "<br>" +
 correo
 );
-
 // TABLA
 agregarTabla(
 docRef.id,
@@ -234,6 +387,7 @@ lon
 
 // CONTADOR
 actualizarTotal();
+actualizarEstadisticas();
 
 alert("Reporte guardado");
 
@@ -283,6 +437,126 @@ alert("Registro eliminado");
 
 location.reload();
 actualizarTotal();
+}
+
+window.abrirEducacion = function(){
+
+const panel =
+document.getElementById("panelEducacion");
+
+if(panel.style.display === "block"){
+
+    panel.style.display = "none";
+
+}else{
+
+    panel.style.display = "block";
+
+}
+
+}
+
+
+window.abrirAnalisis = function(){
+
+const panel =
+document.getElementById("panelAnalisis");
+
+if(panel.style.display === "block"){
+
+    panel.style.display = "none";
+    return;
+
+}
+
+panel.style.display = "block";
+
+let organicos =
+parseInt(document.getElementById("organicos").innerText);
+
+let inorganicos =
+parseInt(document.getElementById("inorganicos").innerText);
+
+let reciclables =
+parseInt(document.getElementById("reciclables").innerText);
+
+let mensaje = "";
+
+if(inorganicos >= 5){
+
+mensaje =
+"🚨 ALERTA AMBIENTAL: Existe acumulación crítica de residuos inorgánicos.";
+
+}
+
+else if(reciclables >= 5){
+
+mensaje =
+"♻ REPORTE POSITIVO: Existe buena cultura de reciclaje.";
+
+}
+
+else if(organicos >= 5){
+
+mensaje =
+"🌱 Predominan residuos orgánicos. Se recomienda compostaje.";
+
+}
+
+else{
+
+mensaje =
+"📊 El sistema ambiental se encuentra estable actualmente.";
+
+}
+
+document.getElementById("mensajeIA").innerText = mensaje;
+
+const ctx =
+document.getElementById("graficoResiduos");
+
+if(window.miGrafico){
+    window.miGrafico.destroy();
+}
+
+window.miGrafico = new Chart(ctx, {
+
+type: 'pie',
+
+data: {
+
+labels: [
+'Orgánicos',
+'Inorgánicos',
+'Reciclables'
+],
+
+datasets: [{
+
+data: [
+organicos,
+inorganicos,
+reciclables
+],
+
+backgroundColor: [
+'#fbc02d',
+'#e53935',
+'#43a047'
+]
+
+}]
+
+},
+
+options: {
+
+responsive: false
+
+}
+
+});
+
 }
 </script>
 
