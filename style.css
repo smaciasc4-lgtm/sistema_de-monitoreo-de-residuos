@@ -167,3 +167,64 @@ margin-top: 20px;
     height: 400px !important;
     margin: auto;
 }
+.subtitulo{
+    color: white;
+    text-align: center;
+    margin-top: -10px;
+    font-size: 15px;
+}
+.menu{
+background:#1b5e20;
+padding:15px;
+display:flex;
+justify-content:center;
+gap:15px;
+flex-wrap:wrap;
+}
+
+.menu button{
+background:white;
+color:#1b5e20;
+border:none;
+padding:12px 20px;
+border-radius:10px;
+font-size:16px;
+font-weight:bold;
+cursor:pointer;
+transition:0.3s;
+}
+
+.menu button:hover{
+background:#c8e6c9;
+transform:scale(1.05);
+}
+#fechaHora{
+color:white;
+font-size:18px;
+margin-top:10px;
+font-weight:bold;
+}
+button{
+    width: 100%;
+    padding: 12px;
+    margin-top: 10px;
+    border: none;
+    border-radius: 10px;
+    background: #1b5e20;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+button:hover{
+    background: #2e7d32;
+    transform: scale(1.02);
+}
+button:last-child{
+    background: #c62828;
+}
+
+button:last-child:hover{
+    background: #e53935;
+}

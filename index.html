@@ -18,8 +18,14 @@
     <header>
         <h1>🌎 Sistema de Monitoreo de Residuos</h1>
         <p class="subtitulo">
-Proyecto elaborado por estudiantes de Ingeniería Ambiental - Sexto "A"
+Proyecto elaborado por estudiantes de la Universidad Técnica Estatal de Quevedo - Carrera de Ingeniería Ambiental
 </p>
+
+<p id="fechaHora"></p>
+
+<button onclick="mostrarCentros()" class="btn-centros">
+♻ Ver Centros de Reciclaje
+</button>
     </header>
 
     <div class="contenedor">
@@ -42,6 +48,19 @@ placeholder="Ingrese su correo">
            <textarea
 id="descripcion"
 placeholder="Describe el problema"></textarea>
+
+<input
+type="text"
+id="sector"
+placeholder="Ingrese sector o barrio">
+
+<select id="nivel">
+    <option>Bajo</option>
+    <option>Medio</option>
+    <option>Alto</option>
+</select>
+
+
 
             <button onclick="obtenerUbicacion()">
                 Reportar Punto
@@ -71,6 +90,12 @@ placeholder="Describe el problema"></textarea>
         <span id="reciclables">0</span>
     </p>
 
+    <h3>🌎 Estado Ambiental</h3>
+
+<p id="estadoAmbiental">
+🟡 Nivel Ambiental Moderado
+</p>
+
 <button onclick="abrirAnalisis()">
     📊 Ver Análisis Ambiental
 </button>
@@ -79,6 +104,15 @@ placeholder="Describe el problema"></textarea>
     
 <button onclick="abrirEducacion()">
     📚 Educación Ambiental 
+</button>
+
+
+<button onclick="descargarPDF()">
+    📄 Descargar Reporte PDF
+</button>
+
+<button onclick="reiniciarSistema()">
+🗑 Reiniciar Sistema
 </button>
 
 </div>
@@ -145,15 +179,18 @@ La comunidad debería implementar puntos ecológicos y campañas de reciclaje.
 
         <table>
 
-            <thead>
-                <tr>
-                    <th>Correo</th>
-                    <th>Tipo</th>
-                    <th>Descripción</th>
-                    <th>Ubicación</th>
-                    <th>Acción</th>
-                </tr>
-            </thead>
+           <thead>
+    <tr>
+        <th>Correo</th>
+        <th>Tipo</th>
+        <th>Descripción</th>
+        <th>Sector</th>
+        <th>Nivel</th>
+        
+        <th>Ubicación</th>
+        <th>Acción</th>
+    </tr>
+</thead>
 
             <tbody id="tablaReportes">
 
@@ -165,6 +202,7 @@ La comunidad debería implementar puntos ecológicos y campañas de reciclaje.
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <script type="module">
 
@@ -312,6 +350,8 @@ id,
 data.correo,
 data.tipo,
 data.descripcion,
+data.sector,
+data.nivel,
 data.lat,
 data.lon
 );
@@ -346,7 +386,9 @@ fillOpacity: 0.8
 .bindPopup(
 
 "<b>" + data.tipo + "</b><br>" +
-data.descripcion + "<br>" +
+"📝 " + data.descripcion + "<br>" +
+"🏘 Sector: " + data.sector + "<br>" +
+"⚠ Nivel: " + data.nivel + "<br>" +
 "📧 " + data.correo + "<br>" +
 "📍 " + data.lat.toFixed(4) +
 ", " +
@@ -381,6 +423,12 @@ let correo = document.getElementById("correo").value;
 let tipo = document.getElementById("tipo").value;
 let descripcion = document.getElementById("descripcion").value;
 
+let sector =
+document.getElementById("sector").value;
+
+let nivel =
+document.getElementById("nivel").value;
+
 if(!correo){
 alert("Ingrese correo");
 return;
@@ -398,6 +446,8 @@ collection(db, "reportes"),
 correo,
 tipo,
 descripcion,
+sector,
+nivel,
 lat,
 lon,
 fecha: new Date()
@@ -433,12 +483,15 @@ L.circleMarker([lat, lon], {
 descripcion + "<br>" +
 correo
 );
+
 // TABLA
 agregarTabla(
 docRef.id,
 correo,
 tipo,
 descripcion,
+sector,
+nivel,
 lat,
 lon
 );
@@ -452,36 +505,6 @@ alert("Reporte guardado");
 
 }
 
-// TABLA
-function agregarTabla(
-id,
-correo,
-tipo,
-descripcion,
-lat,
-lon
-){
-
-let tabla =
-document.getElementById("tablaReportes");
-
-let fila = `
-<tr>
-<td>${correo}</td>
-<td>${tipo}</td>
-<td>${descripcion}</td>
-<td>${lat.toFixed(4)}, ${lon.toFixed(4)}</td>
-<td>
-<button onclick="eliminarRegistro('${id}')">
-🗑 Eliminar
-</button>
-</td>
-</tr>
-`;
-
-tabla.innerHTML += fila;
-
-}
 
 import { deleteDoc, doc } from
 "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
@@ -615,6 +638,265 @@ responsive: false
 });
 
 }
+// TABLA
+function agregarTabla(
+id,
+correo,
+tipo,
+descripcion,
+sector,
+nivel,
+lat,
+lon
+)
+{
+
+let tabla =
+document.getElementById("tablaReportes");
+
+let fila = `
+<tr>
+<td>${correo}</td>
+<td>${tipo}</td>
+<td>${descripcion}</td>
+<td>${sector}</td>
+<td>${nivel}</td>
+<td>${lat.toFixed(4)}, ${lon.toFixed(4)}</td>
+
+<td>
+<button onclick="eliminarRegistro('${id}')">
+🗑 Eliminar
+</button>
+</td>
+
+</tr>
+`;
+
+tabla.innerHTML += fila;
+
+}
+function actualizarHora(){
+
+let ahora = new Date();
+
+document.getElementById("fechaHora").innerHTML =
+"🕒 " + ahora.toLocaleString();
+
+}
+
+setInterval(actualizarHora,1000);
+
+actualizarHora();
+
+// PDF PROFESIONAL
+window.descargarPDF = function(){
+
+const { jsPDF } = window.jspdf;
+
+let doc = new jsPDF();
+
+
+// TÍTULO
+doc.setFillColor(34, 139, 34);
+
+doc.rect(0, 0, 210, 30, 'F');
+
+doc.setTextColor(255,255,255);
+
+doc.setFontSize(22);
+
+doc.text(
+"Sistema de Monitoreo de Residuos",
+20,
+20
+);
+
+
+// SUBTÍTULO
+doc.setTextColor(0,0,0);
+
+doc.setFontSize(11);
+
+doc.text(
+"Universidad Técnica Estatal de Quevedo - Ingeniería Ambiental",
+20,
+40
+);
+
+
+// FECHA
+let fecha = new Date().toLocaleString();
+
+doc.text(
+"Fecha: " + fecha,
+20,
+48
+);
+
+
+// ENCABEZADOS TABLA
+let y = 65;
+
+doc.setFillColor(50,120,50);
+
+doc.rect(10, y, 195, 10, 'F');
+
+doc.setTextColor(255,255,255);
+
+doc.setFontSize(10);
+
+doc.text("Correo", 12, y+7);
+
+doc.text("Tipo", 55, y+7);
+
+doc.text("Sector", 95, y+7);
+
+doc.text("Nivel", 145, y+7);
+
+doc.text("Ubicación", 165, y+7);
+
+// DATOS
+y += 15;
+
+doc.setTextColor(0,0,0);
+
+let filas =
+document.querySelectorAll("#tablaReportes tr");
+
+filas.forEach((fila) => {
+
+let columnas =
+fila.querySelectorAll("td");
+
+if(columnas.length > 0){
+
+doc.rect(10, y-5, 195, 10);
+
+doc.text(columnas[0].innerText, 12, y);
+
+doc.text(columnas[1].innerText, 55, y);
+
+doc.text(columnas[3].innerText, 95, y);
+
+doc.text(columnas[4].innerText, 145, y);
+
+doc.text(columnas[5].innerText, 165, y);
+
+y += 12;
+
+}
+
+});
+
+
+// PIE
+doc.setFontSize(10);
+
+doc.text(
+"Reporte generado automáticamente por el sistema.",
+20,
+285
+);
+
+
+// GUARDAR
+doc.save("Reporte_Residuos.pdf");
+
+}
+
+window.reiniciarSistema = async function(){
+
+let confirmar = confirm(
+"¿Seguro que deseas eliminar TODOS los reportes?"
+);
+
+if(!confirmar){
+    return;
+}
+
+const querySnapshot =
+await getDocs(collection(db, "reportes"));
+
+for (const documento of querySnapshot.docs){
+
+    await deleteDoc(doc(db, "reportes", documento.id));
+
+}
+
+alert("Sistema reiniciado correctamente");
+
+location.reload();
+
+}
+
+let centrosMostrados = false;
+
+window.mostrarCentros = function(){
+
+if(centrosMostrados){
+    location.reload();
+    return;
+}
+
+centrosMostrados = true;
+
+// QUITO
+L.marker([-0.1807, -78.4678])
+.addTo(map)
+.bindPopup(
+"♻ Quito - Centro de Reciclaje Municipal"
+);
+
+// GUAYAQUIL
+L.marker([-2.1709, -79.9224])
+.addTo(map)
+.bindPopup(
+"🌱 Guayaquil - Punto Ecológico"
+);
+
+// CUENCA
+L.marker([-2.9005, -79.0045])
+.addTo(map)
+.bindPopup(
+"🟢 Cuenca - Centro Ambiental"
+);
+
+// QUEVEDO
+L.marker([-1.0286, -79.4635])
+.addTo(map)
+.bindPopup(
+"♻ Quevedo - Punto Verde"
+);
+
+// MANTA
+L.marker([-0.9677, -80.7089])
+.addTo(map)
+.bindPopup(
+"🌎 Manta - Reciclaje Costero"
+);
+
+// LOJA
+L.marker([-3.9931, -79.2042])
+.addTo(map)
+.bindPopup(
+"♻ Loja - Centro de Gestión Ambiental"
+);
+
+// AMBATO
+L.marker([-1.2491, -78.6167])
+.addTo(map)
+.bindPopup(
+"🌱 Ambato - Punto de Reciclaje"
+);
+
+// ZOOM ECUADOR
+map.setView([-1.8312, -78.1834], 7);
+
+alert("Centros ecológicos del Ecuador cargados");
+
+}
+
+
 </script>
 
 </body>
