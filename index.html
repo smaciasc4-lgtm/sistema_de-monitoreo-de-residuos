@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Mapa de Residuos</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <link rel="stylesheet"
+    href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+</head>
+
+<body>
+
+    <header>
+        <h1>🌎 Sistema de Monitoreo de Residuos</h1>
+    </header>
+
+    <div class="contenedor">
+
+        <!-- PANEL IZQUIERDO -->
+        <div class="panel">
+
+            <h2>📌 Reportar Residuo</h2>
+
+            <select id="tipo">
+                <option>Orgánico</option>
+                <option>Inorgánico</option>
+                <option>Reciclable</option>
+            </select>
+
+            <textarea
+            id="descripcion"
+            placeholder="Describe el problema">
+            </textarea>
+
+            <button onclick="obtenerUbicacion()">
+                Reportar Punto
+            </button>
+
+            <div class="estadisticas">
+
+                <h3>📊 Estadísticas</h3>
+
+                <p>Total Reportes:
+                    <span id="total">0</span>
+                </p>
+
+            </div>
+
+        </div>
+
+        <!-- MAPA -->
+        <div id="map"></div>
+
+    </div>
+
+    <!-- TABLA -->
+    <div class="tabla-contenedor">
+
+        <h2>🗑️ Listado de Residuos</h2>
+
+        <table>
+
+            <thead>
+                <tr>
+                    <th>Tipo</th>
+                    <th>Descripción</th>
+                    <th>Ubicación</th>
+                </tr>
+            </thead>
+
+            <tbody id="tablaReportes">
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>
