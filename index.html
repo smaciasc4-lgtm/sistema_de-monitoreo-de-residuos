@@ -179,33 +179,22 @@ cargarReportes();
 // FUNCIÓN
 window.obtenerUbicacion = async function(){
 
-let correo =
-document.getElementById("correo").value;
-
-let tipo =
-document.getElementById("tipo").value;
-
-let descripcion =
-document.getElementById("descripcion").value;
+let correo = document.getElementById("correo").value;
+let tipo = document.getElementById("tipo").value;
+let descripcion = document.getElementById("descripcion").value;
 
 if(!correo){
-
 alert("Ingrese correo");
-
 return;
-
 }
 
-navigator.geolocation.getCurrentPosition(
-
-async function(position){
+navigator.geolocation.getCurrentPosition(async function(position){
 
 let lat = position.coords.latitude;
-
 let lon = position.coords.longitude;
 
-// Guardar en Firebase
-await addDoc(
+// GUARDAR EN FIREBASE
+const docRef = await addDoc(
 collection(db, "reportes"),
 {
 correo,
@@ -213,11 +202,11 @@ tipo,
 descripcion,
 lat,
 lon,
-fecha:new Date()
+fecha: new Date()
 }
 );
 
-// Marcador
+// MAPA
 L.marker([lat, lon])
 .addTo(map)
 .bindPopup(
@@ -226,9 +215,9 @@ descripcion + "<br>" +
 correo
 );
 
-// Tabla
+// TABLA
 agregarTabla(
-id,
+docRef.id,
 correo,
 tipo,
 descripcion,
@@ -236,17 +225,12 @@ lat,
 lon
 );
 
-// Contador
 total++;
+document.getElementById("total").innerHTML = total;
 
-document.getElementById("total")
-.innerHTML = total;
+alert("Reporte guardado");
 
-alert("Reporte guardado online");
-
-}
-
-);
+});
 
 }
 
