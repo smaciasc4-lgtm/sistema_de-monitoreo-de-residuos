@@ -125,10 +125,8 @@ const app = initializeApp(firebaseConfig);
 
 const db = getFirestore(app);
 function actualizarTotal(){
-
-document.getElementById("total").innerHTML =
-document.querySelectorAll("#tablaReportes tr").length;
-
+const filas = document.querySelectorAll("#tablaReportes tr").length;
+document.getElementById("total").innerHTML = filas;
 }
 
 // MAPA
@@ -178,7 +176,9 @@ data.correo
 
 });
 actualizarTotal();
-
+setTimeout(() => {
+    actualizarTotal();
+}, 500);
 }
 
 cargarReportes();
@@ -282,7 +282,7 @@ await deleteDoc(doc(db, "reportes", id));
 alert("Registro eliminado");
 
 location.reload();
-
+actualizarTotal();
 }
 </script>
 
