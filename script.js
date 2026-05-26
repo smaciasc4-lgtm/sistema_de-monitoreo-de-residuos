@@ -1,90 +1,86 @@
-// Crear mapa
 var map = L.map('map').setView([-0.2299, -78.5249], 13);
 
-// Cargar mapa
 L.tileLayer(
 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
 {
     attribution:'OpenStreetMap'
 }).addTo(map);
 
-// Contador
-let total = 0;
+// CONTADOR REAL (NO MANUAL)
+function actualizarTotal(){
+document.getElementById("total").innerHTML =
+document.querySelectorAll("#tablaReportes tr").length;
+}
 
-// Función principal
+// MAPA + TABLA
 function obtenerUbicacion(){
 
-    let tipo =
-    document.getElementById("tipo").value;
+let tipo = document.getElementById("tipo").value;
+let descripcion = document.getElementById("descripcion").value;
 
-    let descripcion =
-    document.getElementById("descripcion").value;
+if(navigator.geolocation){
 
-    if(navigator.geolocation){
+navigator.geolocation.getCurrentPosition(function(position){
 
-        navigator.geolocation.getCurrentPosition(
-        function(position){
+let lat = position.coords.latitude;
+let lon = position.coords.longitude;
 
-            let lat = position.coords.latitude;
-            let lon = position.coords.longitude;
+// MAPA
+L.marker([lat, lon])
+.addTo(map)
+.bindPopup("<b>" + tipo + "</b><br>" + descripcion);
 
-            // Crear marcador
-            L.marker([lat, lon])
-            .addTo(map)
-            .bindPopup(
-                "<b>" + tipo + "</b><br>" +
-                descripcion
-            );
+map.setView([lat, lon], 15);
 
-            // Mover mapa
-            map.setView([lat, lon], 15);
+// TABLA
+agregarTabla(tipo, descripcion, lat, lon);
 
-            // Agregar tabla
-            agregarTabla(
-                tipo,
-                descripcion,
-                lat,
-                lon
-            );
+// CONTADOR
+actualizarTotal();
 
-            // Actualizar contador
-            total++;
+alert("Reporte registrado");
 
-            document.getElementById("total")
-            .innerHTML = total;
+});
 
-            alert("Reporte registrado");
-
-        });
-
-    }else{
-        alert("GPS no compatible");
-    }
+}else{
+alert("GPS no compatible");
+}
 
 }
 
-// Función tabla
-function agregarTabla(
-tipo,
-descripcion,
-lat,
-lon
-){
+// TABLA
+function agregarTabla(tipo, descripcion, lat, lon){
 
-    let tabla =
-    document.getElementById("tablaReportes");
+let tabla = document.getElementById("tablaReportes");
 
-    let fila = `
-    <tr>
-        <td>${tipo}</td>
-        <td>${descripcion}</td>
-        <td>
-        ${lat.toFixed(4)},
-        ${lon.toFixed(4)}
-        </td>
-    </tr>
-    `;
+let fila = `
+<tr>
+    <td>${tipo}</td>
+    <td>${descripcion}</td>
+    <td>${lat.toFixed(4)}, ${lon.toFixed(4)}</td>
+</tr>
+`;
 
-    tabla.innerHTML += fila;
+tabla.innerHTML += fila;
+}
 
+// FILTRO SIMPLE (SIN FIREBASE)
+function filtrar(){
+
+let filtro = document.getElementById("filtro").value;
+let filas = document.querySelectorAll("#tablaReportes tr");
+
+filas.forEach(fila => {
+
+let tipo = fila.cells[0].innerText;
+
+if(filtro === "Todos" || tipo === filtro){
+fila.style.display = "";
+}else{
+fila.style.display = "none";
+}
+
+});
+
+actualizarTotal();
 }
