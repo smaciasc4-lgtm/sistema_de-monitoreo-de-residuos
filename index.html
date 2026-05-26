@@ -17,6 +17,9 @@
 
     <header>
         <h1>🌎 Sistema de Monitoreo de Residuos</h1>
+        <p class="subtitulo">
+Proyecto elaborado por estudiante de Ingeniería Ambiental - Sexto "A"
+</p>
     </header>
 
     <div class="contenedor">
@@ -234,6 +237,27 @@ document.getElementById("reciclables").innerText = reciclables;
 
 document.getElementById("total").innerText =
 organicos + inorganicos + reciclables;
+let estado =
+document.getElementById("estadoAmbiental");
+
+if(inorganicos >= 5){
+
+estado.innerHTML =
+"🔴 Contaminación Alta";
+
+}
+else if(reciclables >= 5){
+
+estado.innerHTML =
+"🟢 Buen Nivel de Reciclaje";
+
+}
+else{
+
+estado.innerHTML =
+"🟡 Nivel Ambiental Moderado";
+
+}
 
 }
 
@@ -323,7 +347,10 @@ fillOpacity: 0.8
 
 "<b>" + data.tipo + "</b><br>" +
 data.descripcion + "<br>" +
-data.correo
+"📧 " + data.correo + "<br>" +
+"📍 " + data.lat.toFixed(4) +
+", " +
+data.lon.toFixed(4)
 
 );
 
@@ -333,11 +360,19 @@ data.correo
 await actualizarEstadisticas();
 }
 
-cargarReportes();
+window.onload = async function(){
 
-setInterval(() => {
-    cargarReportes();
-}, 15000);
+    await cargarReportes();
+    await actualizarEstadisticas();
+
+    setInterval(async () => {
+
+        await cargarReportes();
+        await actualizarEstadisticas();
+
+    }, 15000);
+
+}
 
 // FUNCIÓN
 window.obtenerUbicacion = async function(){
