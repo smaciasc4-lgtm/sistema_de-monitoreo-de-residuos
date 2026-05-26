@@ -124,6 +124,12 @@ measurementId: "G-7K7NYG6TKT"
 const app = initializeApp(firebaseConfig);
 
 const db = getFirestore(app);
+function actualizarTotal(){
+
+document.getElementById("total").innerHTML =
+document.querySelectorAll("#tablaReportes tr").length;
+
+}
 
 // MAPA
 var map = L.map('map').setView([-0.2299, -78.5249], 13);
@@ -136,7 +142,7 @@ attribution:'OpenStreetMap'
 }).addTo(map);
 
 // Contador
-let total = 0;
+
 
 // Cargar reportes
 async function cargarReportes(){
@@ -169,11 +175,9 @@ data.correo
 );
 
 // CONTADOR
-total++;
 
 });
-
-document.getElementById("total").innerHTML = total;
+actualizarTotal();
 
 }
 
@@ -196,7 +200,7 @@ navigator.geolocation.getCurrentPosition(async function(position){
 let lat = position.coords.latitude;
 let lon = position.coords.longitude;
 
-// GUARDAR EN FIREBASE
+// GUARDAR
 const docRef = await addDoc(
 collection(db, "reportes"),
 {
@@ -228,8 +232,8 @@ lat,
 lon
 );
 
-total++;
-document.getElementById("total").innerHTML = total;
+// CONTADOR
+actualizarTotal();
 
 alert("Reporte guardado");
 
