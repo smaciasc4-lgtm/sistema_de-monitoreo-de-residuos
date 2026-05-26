@@ -199,35 +199,41 @@ measurementId: "G-7K7NYG6TKT"
 const app = initializeApp(firebaseConfig);
 
 const db = getFirestore(app);
-function actualizarEstadisticas(){
+async function actualizarEstadisticas(){
 
-const filas = document.querySelectorAll("#tablaReportes tr");
+const querySnapshot =
+await getDocs(collection(db, "reportes"));
 
 let organicos = 0;
 let inorganicos = 0;
 let reciclables = 0;
 
-filas.forEach(fila => {
+querySnapshot.forEach((doc) => {
 
-let tipo = fila.children[1].innerText;
+const data = doc.data();
 
-if(tipo === "Orgánico"){
+if(data.tipo === "Orgánico"){
     organicos++;
 }
 
-if(tipo === "Inorgánico"){
+if(data.tipo === "Inorgánico"){
     inorganicos++;
 }
 
-if(tipo === "Reciclable"){
+if(data.tipo === "Reciclable"){
     reciclables++;
 }
 
 });
 
 document.getElementById("organicos").innerText = organicos;
+
 document.getElementById("inorganicos").innerText = inorganicos;
+
 document.getElementById("reciclables").innerText = reciclables;
+
+document.getElementById("total").innerText =
+organicos + inorganicos + reciclables;
 
 }
 
@@ -324,16 +330,19 @@ data.correo
 });
 
 // ACTUALIZAR CONTADORES
-actualizarTotal();
-actualizarEstadisticas();
+setTimeout(() => {
 
+    actualizarTotal();
+    actualizarEstadisticas();
+
+}, 300);
 }
 
 cargarReportes();
 
 setInterval(() => {
     cargarReportes();
-}, 5000);
+}, 15000);
 
 // FUNCIÓN
 window.obtenerUbicacion = async function(){
@@ -405,8 +414,7 @@ lon
 );
 
 // CONTADOR
-actualizarTotal();
-actualizarEstadisticas();
+await actualizarEstadisticas();
 
 alert("Reporte guardado");
 
