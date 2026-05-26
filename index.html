@@ -256,6 +256,18 @@ attribution:'OpenStreetMap'
 // Cargar reportes
 async function cargarReportes(){
 
+// LIMPIAR TABLA
+document.getElementById("tablaReportes").innerHTML = "";
+
+// LIMPIAR MARCADORES DEL MAPA
+map.eachLayer((layer) => {
+
+if(layer instanceof L.CircleMarker){
+    map.removeLayer(layer);
+}
+
+});
+
 const querySnapshot =
 await getDocs(collection(db, "reportes"));
 
@@ -264,7 +276,7 @@ querySnapshot.forEach((doc) => {
 const data = doc.data();
 const id = doc.id;
 
-// TABLA (AHORA SÍ CON ID)
+// TABLA
 agregarTabla(
 id,
 data.correo,
@@ -274,7 +286,7 @@ data.lat,
 data.lon
 );
 
-// MAPA
+// COLOR
 let color = "";
 
 if(data.tipo === "Orgánico"){
@@ -289,32 +301,39 @@ if(data.tipo === "Reciclable"){
     color = "green";
 }
 
+// MAPA
 L.circleMarker([data.lat, data.lon], {
-    radius: 10,
-    fillColor: color,
-    color: "#000",
-    weight: 1,
-    opacity: 1,
-    fillOpacity: 0.8
+
+radius: 10,
+fillColor: color,
+color: "#000",
+weight: 1,
+opacity: 1,
+fillOpacity: 0.8
+
 })
 .addTo(map)
 .bindPopup(
+
 "<b>" + data.tipo + "</b><br>" +
 data.descripcion + "<br>" +
 data.correo
+
 );
 
-// CONTADOR
-
 });
+
+// ACTUALIZAR CONTADORES
 actualizarTotal();
-setTimeout(() => {
-   actualizarTotal();
 actualizarEstadisticas();
-}, 500);
+
 }
 
 cargarReportes();
+
+setInterval(() => {
+    cargarReportes();
+}, 5000);
 
 // FUNCIÓN
 window.obtenerUbicacion = async function(){
