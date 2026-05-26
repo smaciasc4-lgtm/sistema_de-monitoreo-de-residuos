@@ -149,7 +149,9 @@ querySnapshot.forEach((doc) => {
 const data = doc.data();
 const id = doc.id;
 
+// TABLA (AHORA SÍ CON ID)
 agregarTabla(
+id,
 data.correo,
 data.tipo,
 data.descripcion,
@@ -157,6 +159,7 @@ data.lat,
 data.lon
 );
 
+// MAPA
 L.marker([data.lat, data.lon])
 .addTo(map)
 .bindPopup(
@@ -165,12 +168,12 @@ data.descripcion + "<br>" +
 data.correo
 );
 
+// CONTADOR
 total++;
 
-document.getElementById("total")
-.innerHTML = total;
-
 });
+
+document.getElementById("total").innerHTML = total;
 
 }
 
