@@ -147,6 +147,7 @@ await getDocs(collection(db, "reportes"));
 querySnapshot.forEach((doc) => {
 
 const data = doc.data();
+const id = doc.id;
 
 agregarTabla(
 data.correo,
@@ -227,6 +228,7 @@ correo
 
 // Tabla
 agregarTabla(
+id,
 correo,
 tipo,
 descripcion,
@@ -250,6 +252,7 @@ alert("Reporte guardado online");
 
 // TABLA
 function agregarTabla(
+id,
 correo,
 tipo,
 descripcion,
@@ -266,6 +269,11 @@ let fila = `
 <td>${tipo}</td>
 <td>${descripcion}</td>
 <td>${lat.toFixed(4)}, ${lon.toFixed(4)}</td>
+<td>
+<button onclick="eliminarRegistro('${id}')">
+🗑 Eliminar
+</button>
+</td>
 </tr>
 `;
 
@@ -273,6 +281,18 @@ tabla.innerHTML += fila;
 
 }
 
+import { deleteDoc, doc } from
+"https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+
+window.eliminarRegistro = async function(id){
+
+await deleteDoc(doc(db, "reportes", id));
+
+alert("Registro eliminado");
+
+location.reload();
+
+}
 </script>
 
 </body>
