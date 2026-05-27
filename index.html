@@ -54,17 +54,61 @@ Crear Cuenta
 </div>
 
     <header>
-        <h1>🌎 Sistema de Monitoreo de Residuos</h1>
-        <p class="subtitulo">
-Proyecto elaborado por estudiantes de la Universidad Técnica Estatal de Quevedo - Carrera de Ingeniería Ambiental
-</p>
 
-<p id="fechaHora"></p>
+    <!-- BOTON PEQUEÑO ARRIBA -->
+    <div class="barra-superior">
 
-<button onclick="mostrarCentros()" class="btn-centros">
-♻ Ver Centros de Reciclaje
-</button>
-    </header>
+        <button class="btn-autores" onclick="mostrarAutores()">
+            👨‍💻 Desarrollado por
+        </button>
+
+    </div>
+
+    <!-- TITULO -->
+    <h1>🌎 Sistema de Monitoreo de Residuos</h1>
+
+    <p class="subtitulo">
+        Proyecto elaborado por estudiantes de la Universidad Técnica Estatal de Quevedo - Carrera de Ingeniería Ambiental
+    </p>
+
+    <p id="fechaHora"></p>
+
+    <button onclick="mostrarCentros()" class="btn-centros">
+        ♻ Ver Centros de Reciclaje
+    </button>
+
+</header>
+    <!-- MODAL AUTORES -->
+<div id="modalAutores" class="modal-autores">
+
+    <div class="contenido-autores">
+
+        <span class="cerrar" onclick="cerrarAutores()">✖</span>
+
+        <h2>👨‍💻 Equipo de Desarrollo</h2>
+
+        <div class="lista-autores">
+
+            <p>• Aguilera Rosado Judith Mayerly</p>
+            <p>• Barzola Barzola Madelyn Antonela</p>
+            <p>• Duarte Vergara Evelyn Eliana</p>
+            <p>• Fernandez Guzman Jeniffer Alexandra</p>
+            <p>• Macias Chica Steven Enrique</p>
+            <p>• Mendoza Zambrano Justin Bryan</p>
+            <p>• Peñafiel Rivas Jostin Ramon</p>
+            <p>• Posligua Peñafiel Victor Elian</p>
+            <p>• Toscano Polanco Karla Odalis</p>
+            <p>• Valarezo Estrada David Vicente</p>
+            <p>• Vargas Montes Melanie Camila</p>
+            <p>• Vera Aviles Jesus Estefano</p>
+            <p>• Villacres Arriciaga Bryan Alexis</p>
+            <p>• Palma Intriago Andersson Ariel</p>
+
+        </div>
+
+    </div>
+
+</div>
 
     <div class="contenedor">
 
@@ -1093,6 +1137,17 @@ alert("Centros ecológicos del Ecuador cargados");
 
 }
 
+window.mostrarAutores = function(){
+
+    document.getElementById("modalAutores").style.display = "block";
+
+}
+
+window.cerrarAutores = function(){
+
+    document.getElementById("modalAutores").style.display = "none";
+
+}
 
 
 </script>
