@@ -17,6 +17,42 @@
 
 <body>
 
+    <div id="modalLogin" class="modal-login">
+
+<div class="contenido-login">
+
+<div class="logo-login">
+🌎
+</div>
+
+<h1>Sistema Ambiental</h1>
+
+<p class="texto-login">
+Monitoreo Inteligente de Residuos
+</p>
+
+<input
+type="email"
+id="correo"
+placeholder="Ingrese su correo">
+
+<input
+type="password"
+id="password"
+placeholder="Ingrese contraseña">
+
+<button onclick="iniciarSesion()">
+Ingresar
+</button>
+
+<button onclick="registrarse()" class="btn-secundario">
+Crear Cuenta
+</button>
+
+</div>
+
+</div>
+
     <header>
         <h1>🌎 Sistema de Monitoreo de Residuos</h1>
         <p class="subtitulo">
@@ -36,10 +72,7 @@ Proyecto elaborado por estudiantes de la Universidad Técnica Estatal de Quevedo
         <div class="panel">
 
             <h2>📌 Reportar Residuo</h2>
-            <input
-type="email"
-id="correo"
-placeholder="Ingrese su correo">
+           
 
             <select id="tipo">
                 <option>Orgánico</option>
@@ -115,6 +148,10 @@ placeholder="Ingrese sector o barrio">
 
 <button onclick="reiniciarSistema()">
 🗑 Reiniciar Sistema
+</button>
+
+<button onclick="cerrarSesion()" class="btn-salir">
+🚪 Cerrar Sesión
 </button>
 
 </div>
@@ -212,6 +249,15 @@ import { initializeApp }
 from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
 
 import {
+getAuth,
+createUserWithEmailAndPassword,
+signInWithEmailAndPassword,
+onAuthStateChanged,
+signOut
+}
+from "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js";
+
+import {
 getFirestore,
 collection,
 addDoc,
@@ -242,6 +288,25 @@ measurementId: "G-7K7NYG6TKT"
 const app = initializeApp(firebaseConfig);
 
 const db = getFirestore(app);
+
+const auth = getAuth(app);
+
+
+
+onAuthStateChanged(auth, (user) => {
+
+if(user){
+
+document.getElementById("modalLogin").style.display = "none";
+
+}else{
+
+document.getElementById("modalLogin").style.display = "flex";
+
+}
+
+});
+
 async function actualizarEstadisticas(){
 
 const querySnapshot =
@@ -420,11 +485,84 @@ window.addEventListener("load", async function(){
 
 
 // FUNCIÓN
+
+window.registrarse = async function(){
+
+let correo =
+document.getElementById("correo").value;
+
+let password =
+document.getElementById("password").value;
+
+try{
+
+await createUserWithEmailAndPassword(
+auth,
+correo,
+password
+);
+
+alert("Usuario registrado");
+
+}catch(error){
+
+alert(error.message);
+
+}
+
+}
+
+window.iniciarSesion = async function(){
+
+let correo =
+document.getElementById("correo").value;
+
+let password =
+document.getElementById("password").value;
+
+try{
+
+await signInWithEmailAndPassword(
+auth,
+correo,
+password
+);
+
+alert("Sesión iniciada");
+
+document.getElementById("modalLogin").style.display = "none";
+
+}catch(error){
+
+alert(error.message);
+
+}
+
+}
+
+window.cerrarSesion = async function(){
+
+await signOut(auth);
+
+alert("Sesión cerrada");
+
+}
 window.obtenerUbicacion = async function(){
 
-let correo = document.getElementById("correo").value;
+if(!auth.currentUser){
+
+alert("Debe iniciar sesión");
+
+return;
+
+}
+
+let correo = auth.currentUser.email;
+
 let tipo = document.getElementById("tipo").value;
-let descripcion = document.getElementById("descripcion").value;
+
+let descripcion =
+document.getElementById("descripcion").value;
 
 let sector =
 document.getElementById("sector").value;
@@ -512,18 +650,14 @@ alert("Reporte guardado");
 import { deleteDoc, doc } from
 "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 
-window.eliminarRegistro = async function(id, correoRegistro){
+window.eliminarRegistro = async function(id){
 
-let correoActual =
-prompt("Ingrese su correo para confirmar");
+if(!auth.currentUser){
 
-if(correoActual !== correoRegistro){
+alert("Debe iniciar sesión");
 
-    alert(
-    "No puedes eliminar reportes de otros usuarios"
-    );
+return;
 
-    return;
 }
 
 await deleteDoc(doc(db, "reportes", id));
@@ -533,6 +667,7 @@ alert("Registro eliminado");
 location.reload();
 
 }
+
 
 window.abrirEducacion = function(){
 
@@ -679,9 +814,25 @@ let fila = `
 <td>${lat.toFixed(4)}, ${lon.toFixed(4)}</td>
 
 <td>
-<button onclick="eliminarRegistro('${id}','${correo}')">
+
+${
+
+auth.currentUser &&
+auth.currentUser.email === correo
+
+?
+
+
+`<button onclick="eliminarRegistro('${id}')">
 🗑 Eliminar
-</button>
+</button>`
+
+:
+
+`🔒`
+
+}
+
 </td>
 
 </tr>
@@ -705,6 +856,17 @@ actualizarHora();
 
 // PDF PROFESIONAL
 window.descargarPDF = function(){
+
+let clave = prompt(
+"Ingrese clave de administrador"
+);
+
+if(clave !== "UTEQ2026"){
+
+alert("Acceso denegado");
+return;
+
+}
 
 const { jsPDF } = window.jspdf;
 
@@ -762,13 +924,13 @@ doc.setFontSize(10);
 
 doc.text("Correo", 12, y+7);
 
-doc.text("Tipo", 55, y+7);
+doc.text("Tipo", 75, y+7);
 
-doc.text("Sector", 95, y+7);
+doc.text("Sector", 110, y+7);
 
-doc.text("Nivel", 145, y+7);
+doc.text("Nivel", 150, y+7);
 
-doc.text("Ubicación", 165, y+7);
+doc.text("Ubicación", 170, y+7);
 
 // DATOS
 y += 15;
@@ -787,15 +949,16 @@ if(columnas.length > 0){
 
 doc.rect(10, y-5, 195, 10);
 
+doc.setFontSize(8);
 doc.text(columnas[0].innerText, 12, y);
+doc.setFontSize(10);
+doc.text(columnas[1].innerText, 75, y);
 
-doc.text(columnas[1].innerText, 55, y);
+doc.text(columnas[3].innerText, 110, y);
 
-doc.text(columnas[3].innerText, 95, y);
+doc.text(columnas[4].innerText, 150, y);
 
-doc.text(columnas[4].innerText, 145, y);
-
-doc.text(columnas[5].innerText, 165, y);
+doc.text(columnas[5].innerText, 170, y);
 
 y += 12;
 
@@ -849,8 +1012,18 @@ for (const documento of querySnapshot.docs){
 
 alert("Sistema reiniciado correctamente");
 
-location.reload();
+// LIMPIAR TABLA VISUAL
+document.getElementById("tablaReportes").innerHTML = "";
 
+// CERRAR SESIÓN
+await signOut(auth);
+
+// LIMPIAR DATOS GUARDADOS
+localStorage.clear();
+sessionStorage.clear();
+
+// RECARGAR
+location.reload();
 }
 
 let centrosMostrados = false;
