@@ -404,7 +404,7 @@ data.lon.toFixed(4)
 await actualizarEstadisticas();
 }
 
-window.onload = async function(){
+window.addEventListener("load", async function(){
 
     await cargarReportes();
     await actualizarEstadisticas();
@@ -415,8 +415,9 @@ window.onload = async function(){
         await actualizarEstadisticas();
 
     }, 15000);
+   
+});
 
-}
 
 // FUNCIÓN
 window.obtenerUbicacion = async function(){
@@ -918,6 +919,7 @@ map.setView([-1.8312, -78.1834], 7);
 alert("Centros ecológicos del Ecuador cargados");
 
 }
+
 
 
 </script>
