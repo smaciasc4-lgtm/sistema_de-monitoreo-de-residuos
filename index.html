@@ -7,7 +7,7 @@
 
     <title>Mapa de Residuos</title>
 
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="style.css">
 
@@ -511,14 +511,26 @@ alert("Reporte guardado");
 import { deleteDoc, doc } from
 "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 
-window.eliminarRegistro = async function(id){
+window.eliminarRegistro = async function(id, correoRegistro){
+
+let correoActual =
+prompt("Ingrese su correo para confirmar");
+
+if(correoActual !== correoRegistro){
+
+    alert(
+    "No puedes eliminar reportes de otros usuarios"
+    );
+
+    return;
+}
 
 await deleteDoc(doc(db, "reportes", id));
 
 alert("Registro eliminado");
 
 location.reload();
-actualizarTotal();
+
 }
 
 window.abrirEducacion = function(){
@@ -666,7 +678,7 @@ let fila = `
 <td>${lat.toFixed(4)}, ${lon.toFixed(4)}</td>
 
 <td>
-<button onclick="eliminarRegistro('${id}')">
+<button onclick="eliminarRegistro('${id}','${correo}')">
 🗑 Eliminar
 </button>
 </td>
@@ -807,6 +819,15 @@ doc.save("Reporte_Residuos.pdf");
 }
 
 window.reiniciarSistema = async function(){
+
+let clave = prompt("Ingrese clave de administrador");
+
+if(clave !== "UTEQ2026"){
+
+    alert("Acceso denegado");
+    return;
+
+}
 
 let confirmar = confirm(
 "¿Seguro que deseas eliminar TODOS los reportes?"
