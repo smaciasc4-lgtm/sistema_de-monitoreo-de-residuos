@@ -211,20 +211,96 @@ placeholder="Ingrese sector o barrio">
 <!-- PANEL ANALISIS -->
 <div id="panelAnalisis" class="panel-analisis" style="display:none;">
 
-<h2>🌎 Análisis Ambiental</h2>
+<h2>🌎 Centro de Inteligencia Ambiental</h2>
 
-<p id="mensajeIA"></p>
+<!-- TARJETAS PRINCIPALES -->
+<div class="cards-ambientales">
+
+    <div class="card-info">
+        <h3>📌 Reportes</h3>
+        <p id="cardTotal">0</p>
+    </div>
+
+    <div class="card-info">
+        <h3>⚠ Riesgo</h3>
+        <p id="cardRiesgo">BAJO</p>
+    </div>
+
+    <div class="card-info">
+    <h3>📍 Puntos críticos</h3>
+    <p id="cardCriticos">0</p>
+</div>
+
+    <div class="card-info">
+        <h3>🌎 Estado</h3>
+        <p id="cardEstado">Estable</p>
+    </div>
+
+</div>
+
+<!-- CLASIFICACION -->
+<div class="clasificacion-residuos">
+
+    <div class="mini-card organico">
+        <h3>🌱 Orgánicos</h3>
+        <p id="orgTotal">0%</p>
+    </div>
+
+    <div class="mini-card inorganico">
+        <h3>🏭 Inorgánicos</h3>
+        <p id="inoTotal">0%</p>
+    </div>
+
+    <div class="mini-card reciclable">
+        <h3>♻ Reciclables</h3>
+        <p id="recTotal">0%</p>
+    </div>
+
+</div>
+
+<!-- ECO SCORE -->
+<div class="eco-panel">
+
+    <h2 id="ecoScore">100</h2>
+    <p>Eco Score Ambiental</p>
+
+</div>
+
+<!-- MENSAJE IA -->
+<div class="mensaje-ia">
+
+    <h3>🤖 Recomendación Inteligente</h3>
+
+    <p id="mensajeIA"></p>
+
+</div>
+
+<!-- GRAFICO -->
+<div class="contenedor-grafico">
 
 <canvas
 id="graficoResiduos"
 style="
-width:400px;
+width:100%;
+max-width:900px;
 height:400px;
 margin:auto;
 display:block;
 ">
 </canvas>
 
+</div>
+
+<!-- TENDENCIA -->
+<div class="tendencia-panel">
+
+<h3>📈 Tendencia Ambiental</h3>
+
+<p id="tendenciaTexto">
+Sin datos suficientes.
+</p>
+
+</div>
 </div>
 
 <!-- PANEL EDUCACION -->
@@ -286,6 +362,7 @@ La comunidad debería implementar puntos ecológicos y campañas de reciclaje.
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 
     <script type="module">
 
@@ -351,6 +428,39 @@ document.getElementById("modalLogin").style.display = "flex";
 
 });
 
+async function actualizarPorcentajesAnalisis(){
+
+const querySnapshot = await getDocs(collection(db, "reportes"));
+
+let total = 0;
+let organicos = 0;
+let inorganicos = 0;
+let reciclables = 0;
+
+querySnapshot.forEach((doc) => {
+
+const data = doc.data();
+
+total++;
+
+if(data.tipo === "Orgánico") organicos++;
+if(data.tipo === "Inorgánico") inorganicos++;
+if(data.tipo === "Reciclable") reciclables++;
+
+});
+
+let pOrg = total ? Math.round((organicos / total) * 100) : 0;
+let pIno = total ? Math.round((inorganicos / total) * 100) : 0;
+let pRec = total ? Math.round((reciclables / total) * 100) : 0;
+
+document.getElementById("orgTotal").innerText = pOrg + "%";
+document.getElementById("inoTotal").innerText = pIno + "%";
+document.getElementById("recTotal").innerText = pRec + "%";
+
+document.getElementById("cardCriticos").innerText = inorganicos;
+
+}
+
 async function actualizarEstadisticas(){
 
 const querySnapshot =
@@ -415,8 +525,131 @@ function actualizarTotal(){
 const total =
 document.querySelectorAll("#tablaReportes tr").length;
 
-document.getElementById("total").innerText = total;
 
+let organicos = 0;
+let inorganicos = 0;
+let reciclables = 0;
+
+reportes.forEach((r)=>{
+
+if(r.tipo === "Orgánico"){
+    organicos++;
+}
+else if(r.tipo === "Inorgánico"){
+    inorganicos++;
+}
+else if(r.tipo === "Reciclable"){
+    reciclables++;
+}
+
+});
+
+const porcentajeOrganico =
+Math.round((organicos/total)*100) || 0;
+
+const porcentajeInorganico =
+Math.round((inorganicos/total)*100) || 0;
+
+const porcentajeReciclable =
+Math.round((reciclables/total)*100) || 0;
+
+document.getElementById("orgTotal").textContent =
+porcentajeOrganico + "%";
+
+document.getElementById("inoTotal").textContent =
+porcentajeInorganico + "%";
+
+document.getElementById("recTotal").textContent =
+porcentajeReciclable + "%";
+
+
+// RIESGO
+
+let riesgo = "🟢 BAJO";
+let estado = "Estable";
+
+if(total > 5){
+
+riesgo = "🟡 MEDIO";
+estado = "Precaución";
+
+}
+
+if(total > 15){
+
+riesgo = "🔴 CRÍTICO";
+estado = "Contaminación elevada";
+
+}
+
+document.getElementById("cardRiesgo").textContent =
+riesgo;
+
+document.getElementById("cardEstado").textContent =
+estado;
+
+
+// ECO SCORE
+
+let eco = 100 - (inorganicos * 4 + total);
+
+if(eco < 0){
+eco = 0;
+}
+
+document.getElementById("ecoScore").textContent =
+eco;
+
+// RECICLAJE
+document.getElementById("cardCriticos").textContent = inorganicos;
+// MENSAJE IA
+
+let mensaje = "";
+
+if(inorganicos > organicos){
+
+mensaje =
+"Se detecta predominio de residuos inorgánicos. Se recomienda intervención de limpieza y campañas ambientales.";
+
+}
+else if(organicos > reciclables){
+
+mensaje =
+"Alta presencia de residuos orgánicos. Se recomienda implementar compostaje comunitario.";
+
+}
+else{
+
+mensaje =
+"El nivel de reciclaje es favorable. Mantener programas de separación de residuos.";
+
+}
+
+document.getElementById("mensajeIA").textContent =
+mensaje;
+
+
+// TENDENCIA
+
+if(total <= 5){
+
+document.getElementById("tendenciaTexto").textContent =
+"Actividad ambiental baja y controlada.";
+
+}
+else if(total <= 15){
+
+document.getElementById("tendenciaTexto").textContent =
+"Incremento moderado de residuos detectado.";
+
+}
+else{
+
+document.getElementById("tendenciaTexto").textContent =
+"Aumento crítico de contaminación registrado.";
+
+}
+document.getElementById("total").innerText = total;
 }
 
 // MAPA
@@ -725,13 +958,14 @@ if(panel.style.display === "block"){
 }else{
 
     panel.style.display = "block";
-
+    actualizarPorcentajesAnalisis();
 }
 
 }
 
 
 window.abrirAnalisis = function(){
+    actualizarPorcentajesAnalisis();
 
 const panel =
 document.getElementById("panelAnalisis");
@@ -744,6 +978,8 @@ if(panel.style.display === "block"){
 }
 
 panel.style.display = "block";
+
+actualizarPorcentajesAnalisis();
 
 let organicos =
 parseInt(document.getElementById("organicos").innerText);
@@ -786,6 +1022,46 @@ mensaje =
 
 document.getElementById("mensajeIA").innerText = mensaje;
 
+let total =
+organicos + inorganicos + reciclables;
+
+let porcentajeReciclaje =
+((reciclables / total) * 100).toFixed(1);
+
+document.getElementById("cardTotal").innerText =
+total;
+
+document.getElementById("cardCriticos").innerText =
+inorganicos;
+
+if(inorganicos >= 10){
+
+document.getElementById("cardRiesgo").innerText =
+"ALTO";
+
+document.getElementById("cardEstado").innerText =
+"Crítico";
+
+}
+else if(inorganicos >= 5){
+
+document.getElementById("cardRiesgo").innerText =
+"MEDIO";
+
+document.getElementById("cardEstado").innerText =
+"Moderado";
+
+}
+else{
+
+document.getElementById("cardRiesgo").innerText =
+"BAJO";
+
+document.getElementById("cardEstado").innerText =
+"Estable";
+
+}
+
 const ctx =
 document.getElementById("graficoResiduos");
 
@@ -795,7 +1071,7 @@ if(window.miGrafico){
 
 window.miGrafico = new Chart(ctx, {
 
-type: 'pie',
+type: 'bar',
 
 data: {
 
@@ -807,6 +1083,8 @@ labels: [
 
 datasets: [{
 
+label: 'Cantidad de residuos',
+
 data: [
 organicos,
 inorganicos,
@@ -814,10 +1092,13 @@ reciclables
 ],
 
 backgroundColor: [
-'#fbc02d',
-'#e53935',
-'#43a047'
-]
+'#4CAF50',
+'#F44336',
+'#2196F3'
+],
+
+borderRadius: 10,
+borderWidth: 1
 
 }]
 
@@ -825,7 +1106,60 @@ backgroundColor: [
 
 options: {
 
-responsive: false
+responsive: true,
+
+plugins: {
+
+legend: {
+
+display: true,
+
+labels: {
+
+color: "white",
+font: {
+size: 14
+}
+
+}
+
+},
+
+title: {
+
+display: true,
+text: 'Análisis General de Residuos',
+color: 'white',
+
+font: {
+size: 18
+}
+
+}
+
+},
+
+scales: {
+
+y: {
+
+beginAtZero: true,
+
+ticks: {
+color: "white"
+}
+
+},
+
+x: {
+
+ticks: {
+color: "white"
+}
+
+}
+
+}
 
 }
 
@@ -900,6 +1234,7 @@ actualizarHora();
 
 // PDF PROFESIONAL
 window.descargarPDF = function(){
+    
 
 let clave = prompt(
 "Ingrese clave de administrador"
@@ -991,6 +1326,14 @@ fila.querySelectorAll("td");
 
 if(columnas.length > 0){
 
+if(y > 260){
+
+doc.addPage();
+
+y = 20;
+
+}
+
 doc.rect(10, y-5, 195, 10);
 
 doc.setFontSize(8);
@@ -1022,8 +1365,163 @@ doc.text(
 
 
 // GUARDAR
-doc.save("Reporte_Residuos.pdf");
+// =========================
+// SEGUNDA PAGINA
+// =========================
 
+doc.addPage();
+
+// TITULO
+doc.setFontSize(22);
+doc.setTextColor(34,139,34);
+
+doc.text(
+"Centro de Inteligencia Ambiental",
+20,
+20
+);
+
+// LINEA
+doc.setDrawColor(34,139,34);
+doc.line(20,25,190,25);
+
+
+// TABLA RESUMEN
+doc.autoTable({
+
+startY: 35,
+
+head: [[
+"Indicador",
+"Valor"
+]],
+
+body: [
+
+[
+"Total Reportes",
+document.getElementById("cardTotal").innerText
+],
+
+[
+"Riesgo Ambiental",
+document.getElementById("cardRiesgo").innerText
+],
+
+[
+"Puntos Criticos",
+document.getElementById("cardCriticos").innerText
+],
+
+[
+"Estado Ambiental",
+document.getElementById("cardEstado").innerText
+],
+
+[
+"Organicos",
+document.getElementById("orgTotal").innerText
+],
+
+[
+"Inorganicos",
+document.getElementById("inoTotal").innerText
+],
+
+[
+"Reciclables",
+document.getElementById("recTotal").innerText
+],
+
+[
+"Eco Score",
+document.getElementById("ecoScore").innerText
+]
+
+],
+
+theme: "grid",
+
+headStyles: {
+
+fillColor: [34,139,34],
+textColor: 255,
+fontSize: 12
+
+},
+
+bodyStyles: {
+
+fontSize: 11
+
+},
+
+alternateRowStyles: {
+
+fillColor: [240,240,240]
+
+}
+
+});
+
+
+// MENSAJE IA
+let finalY = doc.lastAutoTable.finalY + 20;
+
+doc.setFontSize(16);
+doc.setTextColor(0,0,0);
+
+doc.text(
+"Recomendacion Inteligente",
+20,
+finalY
+);
+
+doc.setFontSize(12);
+
+doc.text(
+document.getElementById("mensajeIA").innerText,
+20,
+finalY + 10,
+{
+maxWidth: 160
+}
+);
+
+
+// TENDENCIA
+doc.setFontSize(16);
+
+doc.text(
+"Tendencia Ambiental",
+20,
+finalY + 40
+);
+
+doc.setFontSize(12);
+
+doc.text(
+document.getElementById("tendenciaTexto").innerText,
+20,
+finalY + 50,
+{
+maxWidth: 160
+}
+);
+
+
+// PIE
+doc.setFontSize(10);
+
+doc.text(
+"Reporte generado automaticamente por el sistema ambiental.",
+20,
+285
+);
+
+// GUARDAR
+
+doc.save("Reporte_Residuos.pdf");
 }
 
 window.reiniciarSistema = async function(){
