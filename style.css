@@ -43,7 +43,7 @@ header h1{
 
 /* PANEL */
 .panel{
-    width:32%;
+    width:350px;
 
     background:rgba(255,255,255,0.08);
 
@@ -164,8 +164,7 @@ button:hover{
 
 /* MAPA */
 #map{
-
-    width:68%;
+    flex:1;
 
     height:85vh;
 
@@ -289,19 +288,7 @@ td button:hover{
     margin:auto;
 }
 
-/* RESPONSIVE */
-@media(max-width:900px){
 
-    .contenedor{
-        flex-direction:column;
-    }
-
-    .panel,
-    #map{
-        width:100%;
-    }
-
-}
 body{
     font-family:'Montserrat',sans-serif;
 }
@@ -397,192 +384,6 @@ body{
         padding: 8px;
         text-align: center;
     }
-
-}
-.modal-login{
-
-position: fixed;
-top: 0;
-left: 0;
-
-width: 100%;
-height: 100%;
-
-display: flex;
-justify-content: center;
-align-items: center;
-
-background:
-linear-gradient(
-135deg,
-rgba(15,23,42,0.95),
-rgba(0,0,0,0.85)
-);
-
-backdrop-filter: blur(8px);
-
-z-index: 9999;
-
-animation: aparecer 0.5s ease;
-
-}
-
-@keyframes aparecer{
-
-from{
-opacity:0;
-transform:scale(1.05);
-}
-
-to{
-opacity:1;
-transform:scale(1);
-}
-
-}
-
-.contenido-login{
-
-width: 400px;
-
-padding: 45px;
-
-border-radius: 28px;
-
-background:
-rgba(30,41,59,0.75);
-
-backdrop-filter: blur(20px);
-
-border:
-1px solid rgba(255,255,255,0.1);
-
-box-shadow:
-0 10px 40px rgba(0,0,0,0.5);
-
-display: flex;
-flex-direction: column;
-
-gap: 18px;
-
-animation: subir 0.6s ease;
-
-}
-
-@keyframes subir{
-
-from{
-transform:translateY(40px);
-opacity:0;
-}
-
-to{
-transform:translateY(0);
-opacity:1;
-}
-
-}
-
-.contenido-login h2{
-
-font-size: 34px;
-
-text-align: center;
-
-color: #4ade80;
-
-margin-bottom: 10px;
-
-font-weight: 700;
-
-}
-
-.contenido-login p{
-
-text-align:center;
-
-color:#cbd5e1;
-
-margin-bottom:20px;
-
-font-size:15px;
-
-}
-
-.contenido-login input{
-
-padding: 16px;
-
-border-radius: 14px;
-
-border: none;
-
-outline: none;
-
-background: rgba(255,255,255,0.08);
-
-color: white;
-
-font-size: 15px;
-
-transition: 0.3s;
-
-}
-
-.contenido-login input:focus{
-
-background: rgba(255,255,255,0.12);
-
-box-shadow:
-0 0 10px rgba(34,197,94,0.4);
-
-}
-
-.contenido-login button{
-
-padding: 15px;
-
-border: none;
-
-border-radius: 14px;
-
-font-size: 16px;
-
-font-weight: bold;
-
-cursor: pointer;
-
-transition: 0.3s;
-
-background:
-linear-gradient(
-135deg,
-#22c55e,
-#16a34a
-);
-
-color: white;
-
-box-shadow:
-0 6px 20px rgba(34,197,94,0.35);
-
-}
-
-.contenido-login button:hover{
-
-transform: translateY(-2px);
-
-box-shadow:
-0 10px 25px rgba(34,197,94,0.45);
-
-}
-
-.logo-login{
-
-font-size:60px;
-text-align:center;
-
-margin-bottom:10px;
 
 }
 
@@ -1222,5 +1023,261 @@ margin-top:30px;
 background: rgba(255,255,255,0.08);
 padding:20px;
 border-radius:20px;
+
+}
+
+@media(max-width:768px){
+   .contenedor{
+      flex-direction:column;
+   }
+
+   #map{
+      height:400px;
+   }
+}
+
+/* =========================
+   RESPONSIVE PRO FINAL
+========================= */
+
+@media screen and (max-width: 768px){
+
+    body{
+        overflow-x:hidden;
+    }
+
+    header{
+        padding:15px;
+    }
+
+    header h1{
+        font-size:26px;
+        line-height:1.3;
+    }
+
+    .subtitulo{
+        font-size:13px;
+        padding:0 10px;
+    }
+
+    #fechaHora{
+        font-size:14px;
+    }
+
+    .contenedor{
+        flex-direction:column;
+        padding:10px;
+    }
+
+    .panel{
+        width:100%;
+        height:auto;
+        padding:15px;
+    }
+
+    #map{
+        width:100%;
+        height:400px;
+        min-height:400px;
+    }
+
+    input,
+    select,
+    textarea,
+    button{
+        width:100%;
+        font-size:14px;
+    }
+
+    .tabla-contenedor{
+        overflow-x:auto;
+    }
+
+    table{
+        min-width:700px;
+        font-size:12px;
+    }
+
+    th,
+    td{
+        padding:8px;
+    }
+
+    .contenido-login{
+        width:95%;
+        padding:25px;
+    }
+
+    .contenido-login h1{
+        font-size:26px;
+    }
+
+    .cards-ambientales,
+    .clasificacion-residuos{
+        grid-template-columns:1fr;
+    }
+
+   #graficoResiduos{
+
+    width:100% !important;
+
+    max-width:900px;
+
+    height:auto !important;
+
+    margin:auto;
+
+    display:block;
+}
+}
+/* =========================
+PANEL EDUCACION MODERNO
+========================= */
+
+.panel-educacion{
+
+width: 95%;
+margin: 30px auto;
+padding: 30px;
+border-radius: 25px;
+
+background:
+linear-gradient(
+145deg,
+#050816,
+#0b1324
+);
+
+box-shadow:
+0 0 25px rgba(0,0,0,0.5);
+
+color: white;
+
+}
+
+/* TITULO */
+
+.titulo-educacion{
+
+text-align: center;
+font-size: 42px;
+font-weight: 700;
+margin-bottom: 10px;
+
+}
+
+/* SUBTITULO */
+
+.subtitulo-educacion{
+
+text-align: center;
+font-size: 18px;
+color: #d6d6d6;
+margin-bottom: 40px;
+
+}
+
+/* GRID */
+
+.grid-educacion{
+
+display: grid;
+
+grid-template-columns:
+repeat(auto-fit,minmax(320px,1fr));
+
+gap: 25px;
+
+}
+
+/* CARD */
+
+.card-edu{
+
+background:
+linear-gradient(
+145deg,
+rgba(255,255,255,0.05),
+rgba(255,255,255,0.02)
+);
+
+border: 1px solid rgba(71,255,126,0.3);
+
+border-radius: 22px;
+
+padding: 30px;
+
+transition: 0.3s;
+
+backdrop-filter: blur(10px);
+
+min-height: 220px;
+
+}
+
+/* HOVER */
+
+.card-edu:hover{
+
+transform: translateY(-5px);
+
+box-shadow:
+0 0 20px rgba(71,255,126,0.3);
+
+}
+
+/* ICONO */
+
+.icono-card{
+
+width: 70px;
+height: 70px;
+
+border-radius: 50%;
+
+background:
+rgba(71,255,126,0.15);
+
+display: flex;
+align-items: center;
+justify-content: center;
+
+font-size: 34px;
+
+margin-bottom: 20px;
+
+}
+
+/* TITULO CARD */
+
+.card-edu h3{
+
+font-size: 30px;
+color: #4dff88;
+margin-bottom: 20px;
+
+}
+
+/* TEXTO */
+
+.card-edu p{
+
+font-size: 16px;
+line-height: 1.7;
+color: #f1f1f1;
+
+}
+
+/* RESPONSIVE */
+
+@media(max-width:768px){
+
+.titulo-educacion{
+font-size: 30px;
+}
+
+.card-edu h3{
+font-size: 24px;
+}
 
 }

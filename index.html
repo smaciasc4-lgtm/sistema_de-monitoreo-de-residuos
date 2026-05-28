@@ -303,32 +303,106 @@ Sin datos suficientes.
 </div>
 </div>
 
-<!-- PANEL EDUCACION -->
-<div id="panelEducacion" class="panel-analisis" style="display:none;">
+<!-- PANEL EDUCACION AMBIENTAL MODERNO -->
+<div id="panelEducacion" class="panel-educacion" style="display:none;">
 
-<h2>📚 Educación Ambiental</h2>
+<h2 class="titulo-educacion">
+📚 Educación Ambiental
+</h2>
 
-<p>
-♻ Los residuos sólidos son materiales desechados que pueden afectar el medio ambiente si no se manejan correctamente.
+<p class="subtitulo-educacion">
+Aprende conceptos importantes sobre residuos y cuidado ambiental 🌎
 </p>
 
-<p>
-🌱 Los residuos orgánicos pueden convertirse en compost y ayudar a fertilizar plantas.
-</p>
+<div class="grid-educacion">
 
-<p>
-🏭 Los residuos inorgánicos como plástico y vidrio deben reciclarse para reducir contaminación.
-</p>
+    <!-- CARD -->
+    <div class="card-edu">
 
-<p>
-🌎 La correcta separación de residuos ayuda a disminuir la contaminación del suelo, agua y aire.
-</p>
+        <div class="icono-card">🌱</div>
 
-<p>
-🤖 Recomendación IA:
-La comunidad debería implementar puntos ecológicos y campañas de reciclaje.
-</p>
+        <h3>Residuos Orgánicos</h3>
 
+        <p>
+        Son desechos biodegradables como restos de comida,
+        hojas, frutas y vegetales.
+        </p>
+
+    </div>
+
+    <!-- CARD -->
+    <div class="card-edu">
+
+        <div class="icono-card">🏭</div>
+
+        <h3>Residuos Inorgánicos</h3>
+
+        <p>
+        Son materiales que tardan mucho tiempo en degradarse,
+        como plástico, vidrio y metal.
+        </p>
+
+    </div>
+
+    <!-- CARD -->
+    <div class="card-edu">
+
+        <div class="icono-card">♻</div>
+
+        <h3>Residuos Reciclables</h3>
+
+        <p>
+        Son residuos que pueden reutilizarse para fabricar
+        nuevos productos.
+        </p>
+
+    </div>
+
+    <!-- CARD -->
+    <div class="card-edu">
+
+        <div class="icono-card">🌎</div>
+
+        <h3>Contaminación Ambiental</h3>
+
+        <p>
+        Ocurre cuando los residuos afectan negativamente
+        el suelo, aire y agua.
+        </p>
+
+    </div>
+
+    <!-- CARD -->
+    <div class="card-edu">
+
+        <div class="icono-card">🧴</div>
+
+        <h3>Importancia del Reciclaje</h3>
+
+        <p>
+        El reciclaje ayuda a reducir la basura y proteger
+        los recursos naturales.
+        </p>
+
+    </div>
+
+    <!-- CARD -->
+    <div class="card-edu">
+
+        <div class="icono-card">🌳</div>
+
+        <h3>Educación Ambiental</h3>
+
+        <p>
+        Promueve hábitos ecológicos y el cuidado
+        responsable del medio ambiente.
+        </p>
+
+    </div>
+
+</div>
+
+</div>
 </div>
 
     <!-- TABLA -->
@@ -411,6 +485,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 const auth = getAuth(app);
+
 
 
 
@@ -602,32 +677,46 @@ eco;
 
 // RECICLAJE
 document.getElementById("cardCriticos").textContent = inorganicos;
-// MENSAJE IA
+
+// =========================
+// ANALISIS AUTOMATICO
+// =========================
+
+function generarAnalisisIA(){
 
 let mensaje = "";
 
-if(inorganicos > organicos){
+if(inorganicos >= 5){
 
 mensaje =
-"Se detecta predominio de residuos inorgánicos. Se recomienda intervención de limpieza y campañas ambientales.";
+"🚨 Existe acumulación elevada de residuos inorgánicos. Se recomienda intervención inmediata y campañas de limpieza.";
 
 }
-else if(organicos > reciclables){
+else if(reciclables >= 5){
 
 mensaje =
-"Alta presencia de residuos orgánicos. Se recomienda implementar compostaje comunitario.";
+"♻ Se detecta una buena cultura de reciclaje en la zona. Mantener programas ambientales.";
+
+}
+else if(organicos >= 5){
+
+mensaje =
+"🌱 Predominan residuos orgánicos. Se recomienda implementar compostaje comunitario.";
 
 }
 else{
 
 mensaje =
-"El nivel de reciclaje es favorable. Mantener programas de separación de residuos.";
+"✅ El estado ambiental actual es estable y controlado.";
 
 }
 
-document.getElementById("mensajeIA").textContent =
+document.getElementById("mensajeIA").innerText =
 mensaje;
 
+}
+
+generarAnalisisIA();
 
 // TENDENCIA
 
@@ -1232,13 +1321,13 @@ setInterval(actualizarHora,1000);
 
 actualizarHora();
 
-// PDF PROFESIONAL
-window.descargarPDF = function(){
-    
+// ============================
+// PDF PREMIUM MODERNO
+// ============================
 
-let clave = prompt(
-"Ingrese clave de administrador"
-);
+window.descargarPDF = async function(){
+
+let clave = prompt("Ingrese clave de administrador");
 
 if(clave !== "UTEQ2026"){
 
@@ -1249,147 +1338,79 @@ return;
 
 const { jsPDF } = window.jspdf;
 
-let doc = new jsPDF();
+let doc = new jsPDF("p","mm","a4");
 
+// FONDO
+doc.setFillColor(245,248,250);
+doc.rect(0,0,210,297,"F");
 
-// TÍTULO
-doc.setFillColor(34, 139, 34);
+// HEADER
+doc.setFillColor(34,139,34);
+doc.rect(0,0,210,35,"F");
 
-doc.rect(0, 0, 210, 30, 'F');
-
+// TITULO
 doc.setTextColor(255,255,255);
-
-doc.setFontSize(22);
+doc.setFontSize(24);
 
 doc.text(
-"Sistema de Monitoreo de Residuos",
+"Sistema Inteligente Ambiental",
 20,
-20
+22
 );
 
-
-// SUBTÍTULO
-doc.setTextColor(0,0,0);
-
+// SUBTITULO
 doc.setFontSize(11);
 
 doc.text(
-"Universidad Técnica Estatal de Quevedo - Ingeniería Ambiental",
+"Universidad Técnica Estatal de Quevedo",
 20,
-40
+30
 );
-
 
 // FECHA
-let fecha = new Date().toLocaleString();
+doc.setTextColor(80);
 
-doc.text(
-"Fecha: " + fecha,
-20,
-48
-);
-
-
-// ENCABEZADOS TABLA
-let y = 65;
-
-doc.setFillColor(50,120,50);
-
-doc.rect(10, y, 195, 10, 'F');
-
-doc.setTextColor(255,255,255);
-
-doc.setFontSize(10);
-
-doc.text("Correo", 12, y+7);
-
-doc.text("Tipo", 75, y+7);
-
-doc.text("Sector", 110, y+7);
-
-doc.text("Nivel", 150, y+7);
-
-doc.text("Ubicación", 170, y+7);
-
-// DATOS
-y += 15;
-
-doc.setTextColor(0,0,0);
-
-let filas =
-document.querySelectorAll("#tablaReportes tr");
-
-filas.forEach((fila) => {
-
-let columnas =
-fila.querySelectorAll("td");
-
-if(columnas.length > 0){
-
-if(y > 260){
-
-doc.addPage();
-
-y = 20;
-
-}
-
-doc.rect(10, y-5, 195, 10);
-
-doc.setFontSize(8);
-doc.text(columnas[0].innerText, 12, y);
-doc.setFontSize(10);
-doc.text(columnas[1].innerText, 75, y);
-
-doc.text(columnas[3].innerText, 110, y);
-
-doc.text(columnas[4].innerText, 150, y);
-
-doc.text(columnas[5].innerText, 170, y);
-
-y += 12;
-
-}
-
-});
-
-
-// PIE
 doc.setFontSize(10);
 
 doc.text(
-"Reporte generado automáticamente por el sistema.",
+"Fecha: " + new Date().toLocaleString(),
 20,
-285
+45
 );
 
+// TARJETA
+doc.setFillColor(255,255,255);
 
-// GUARDAR
-// =========================
-// SEGUNDA PAGINA
-// =========================
+doc.roundedRect(
+15,
+55,
+180,
+55,
+5,
+5,
+"F"
+);
 
-doc.addPage();
-
-// TITULO
-doc.setFontSize(22);
+// TITULO TABLA
 doc.setTextColor(34,139,34);
 
+doc.setFontSize(18);
+
 doc.text(
-"Centro de Inteligencia Ambiental",
+"Resumen Ambiental",
 20,
-20
+68
 );
 
 // LINEA
 doc.setDrawColor(34,139,34);
-doc.line(20,25,190,25);
 
+doc.line(20,72,120,72);
 
-// TABLA RESUMEN
+// TABLA
 doc.autoTable({
 
-startY: 35,
+startY: 80,
 
 head: [[
 "Indicador",
@@ -1409,7 +1430,7 @@ document.getElementById("cardRiesgo").innerText
 ],
 
 [
-"Puntos Criticos",
+"Puntos Críticos",
 document.getElementById("cardCriticos").innerText
 ],
 
@@ -1419,12 +1440,12 @@ document.getElementById("cardEstado").innerText
 ],
 
 [
-"Organicos",
+"Orgánicos",
 document.getElementById("orgTotal").innerText
 ],
 
 [
-"Inorganicos",
+"Inorgánicos",
 document.getElementById("inoTotal").innerText
 ],
 
@@ -1442,6 +1463,13 @@ document.getElementById("ecoScore").innerText
 
 theme: "grid",
 
+styles: {
+
+fontSize: 11,
+cellPadding: 4
+
+},
+
 headStyles: {
 
 fillColor: [34,139,34],
@@ -1450,78 +1478,113 @@ fontSize: 12
 
 },
 
-bodyStyles: {
-
-fontSize: 11
-
-},
-
 alternateRowStyles: {
 
-fillColor: [240,240,240]
+fillColor: [245,245,245]
 
 }
 
 });
 
-
-// MENSAJE IA
+// POSICION FINAL
 let finalY = doc.lastAutoTable.finalY + 20;
 
-doc.setFontSize(16);
-doc.setTextColor(0,0,0);
+// TITULO IA
+doc.setFontSize(18);
+
+doc.setTextColor(34,139,34);
 
 doc.text(
-"Recomendacion Inteligente",
+"Recomendación Inteligente IA",
 20,
 finalY
 );
 
+// CAJA IA
+doc.setFillColor(255,255,255);
+
+doc.roundedRect(
+15,
+finalY + 5,
+180,
+35,
+5,
+5,
+"F"
+);
+
+// TEXTO IA
+doc.setTextColor(50);
+
 doc.setFontSize(12);
 
+let mensajeIA =
+document.getElementById("mensajeIA").innerText;
+
+// LIMPIAR EMOJIS
+mensajeIA = mensajeIA.replace(/[^\p{L}\p{N}\s.,]/gu, '');
+
 doc.text(
-document.getElementById("mensajeIA").innerText,
-20,
-finalY + 10,
+mensajeIA,
+22,
+finalY + 18,
 {
-maxWidth: 160
+maxWidth: 165
 }
 );
 
-
 // TENDENCIA
-doc.setFontSize(16);
+doc.setFontSize(18);
+
+doc.setTextColor(34,139,34);
 
 doc.text(
 "Tendencia Ambiental",
 20,
-finalY + 40
+finalY + 55
 );
+
+// CAJA TENDENCIA
+doc.setFillColor(255,255,255);
+
+doc.roundedRect(
+15,
+finalY + 60,
+180,
+28,
+5,
+5,
+"F"
+);
+
+// TEXTO
+doc.setTextColor(50);
 
 doc.setFontSize(12);
 
 doc.text(
 document.getElementById("tendenciaTexto").innerText,
-20,
-finalY + 50,
+22,
+finalY + 77,
 {
-maxWidth: 160
+maxWidth: 165
 }
 );
 
-
-// PIE
+// FOOTER
 doc.setFontSize(10);
 
+doc.setTextColor(120);
+
 doc.text(
-"Reporte generado automaticamente por el sistema ambiental.",
+"Reporte generado automáticamente por el sistema ambiental.",
 20,
 285
 );
 
-// GUARDAR
-
+// DESCARGAR
 doc.save("Reporte_Residuos.pdf");
+
 }
 
 window.reiniciarSistema = async function(){
@@ -1647,6 +1710,79 @@ window.cerrarAutores = function(){
 
 }
 
+window.preguntarIA = function(){
+
+let pregunta =
+document.getElementById("preguntaIA").value.toLowerCase();
+
+if(pregunta.trim() === ""){
+return;
+}
+
+let chat =
+document.getElementById("chatIA");
+
+chat.innerHTML += `
+<div style="
+background:#c8e6c9;
+padding:10px;
+border-radius:10px;
+margin-bottom:10px;
+text-align:right;
+">
+👤 ${pregunta}
+</div>
+`;
+
+document.getElementById("preguntaIA").value = "";
+
+let respuesta = "";
+
+if(pregunta.includes("reciclaje")){
+
+respuesta =
+"♻ El reciclaje ayuda a reducir la contaminación y reutilizar materiales.";
+
+}
+else if(pregunta.includes("contaminacion")){
+
+respuesta =
+"🌎 La contaminación afecta el aire, agua y suelo. Es importante reducir residuos.";
+
+}
+else if(pregunta.includes("organico")){
+
+respuesta =
+"🌱 Los residuos orgánicos pueden convertirse en compost.";
+
+}
+else if(pregunta.includes("plastico")){
+
+respuesta =
+"🧴 El plástico tarda muchos años en degradarse. Se recomienda reciclarlo.";
+
+}
+else{
+
+respuesta =
+"📚 Tema ambiental interesante. Se recomienda fomentar buenas prácticas ecológicas.";
+
+}
+
+chat.innerHTML += `
+<div style="
+background:#e3f2fd;
+padding:10px;
+border-radius:10px;
+margin-bottom:10px;
+">
+🤖 ${respuesta}
+</div>
+`;
+
+chat.scrollTop = chat.scrollHeight;
+
+}
 
 </script>
 
