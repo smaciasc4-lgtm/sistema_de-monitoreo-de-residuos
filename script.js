@@ -8,8 +8,49 @@ L.tileLayer(
 
 // CONTADOR REAL (NO MANUAL)
 function actualizarTotal(){
-document.getElementById("total").innerHTML =
+
+// TOTAL
+const filas =
 document.querySelectorAll("#tablaReportes tr").length;
+
+document.getElementById("total").innerHTML = filas;
+
+// CONTADORES
+let organicos = 0;
+let inorganicos = 0;
+let reciclables = 0;
+
+// RECORRER TABLA
+document.querySelectorAll("#tablaReportes tr")
+.forEach((fila) => {
+
+let tipo = fila.cells[0].innerText;
+
+// CONTAR
+if(tipo === "Orgánico"){
+    organicos++;
+}
+
+if(tipo === "Inorgánico"){
+    inorganicos++;
+}
+
+if(tipo === "Reciclable"){
+    reciclables++;
+}
+
+});
+
+// MOSTRAR
+document.getElementById("organicos")
+.innerHTML = organicos;
+
+document.getElementById("inorganicos")
+.innerHTML = inorganicos;
+
+document.getElementById("reciclables")
+.innerHTML = reciclables;
+
 }
 
 // MAPA + TABLA
