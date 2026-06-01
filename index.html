@@ -128,6 +128,8 @@ Crear Cuenta
 id="descripcion"
 placeholder="Describe el problema"></textarea>
 
+
+
 <input
 type="text"
 id="sector"
@@ -460,6 +462,8 @@ getDocs
 }
 from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 
+
+
 // Firebase
 const firebaseConfig = {
 
@@ -485,6 +489,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 const auth = getAuth(app);
+
 
 
 
@@ -786,7 +791,8 @@ data.descripcion,
 data.sector,
 data.nivel,
 data.lat,
-data.lon
+data.lon,
+data.fotoURL
 );
 
 // COLOR
@@ -822,10 +828,7 @@ fillOpacity: 0.8
 "📝 " + data.descripcion + "<br>" +
 "🏘 Sector: " + data.sector + "<br>" +
 "⚠ Nivel: " + data.nivel + "<br>" +
-"📧 " + data.correo + "<br>" +
-"📍 " + data.lat.toFixed(4) +
-", " +
-data.lon.toFixed(4)
+"📧 " + data.correo + "<br>"
 
 );
 
@@ -936,6 +939,7 @@ document.getElementById("sector").value;
 let nivel =
 document.getElementById("nivel").value;
 
+
 if(!correo){
 alert("Ingrese correo");
 return;
@@ -947,6 +951,8 @@ let lat = position.coords.latitude;
 let lon = position.coords.longitude;
 
 // GUARDAR
+
+
 const docRef = await addDoc(
 collection(db, "reportes"),
 {
@@ -986,11 +992,20 @@ L.circleMarker([lat, lon], {
 })
 .addTo(map)
 .bindPopup(
-"<b>" + tipo + "</b><br>" +
-descripcion + "<br>" +
-correo
-);
 
+"<b>" + data.tipo + "</b><br>" +
+"📝 " + data.descripcion + "<br>" +
+"🏘 Sector: " + data.sector + "<br>" +
+"⚠ Nivel: " + data.nivel + "<br>" +
+"📧 " + data.correo + "<br>" +
+
+(data.fotoURL ?
+
+'<br><img src="' +
+data.fotoURL +
+'" width="200">' : '')
+
+);
 // TABLA
 agregarTabla(
 docRef.id,
@@ -1264,7 +1279,8 @@ descripcion,
 sector,
 nivel,
 lat,
-lon
+lon,
+fotoURL
 )
 {
 
@@ -1326,6 +1342,13 @@ actualizarHora();
 // ============================
 
 window.descargarPDF = async function(){
+
+await actualizarEstadisticas();
+await actualizarPorcentajesAnalisis();
+const querySnapshot =
+await getDocs(collection(db, "reportes"));
+
+const totalReportes = querySnapshot.size;
 
 let clave = prompt("Ingrese clave de administrador");
 
@@ -1419,9 +1442,11 @@ head: [[
 
 body: [
 
+
+
 [
 "Total Reportes",
-document.getElementById("cardTotal").innerText
+totalReportes
 ],
 
 [
@@ -1486,90 +1511,36 @@ fillColor: [245,245,245]
 
 });
 
-// POSICION FINAL
-let finalY = doc.lastAutoTable.finalY + 20;
+const filas = [];
 
-// TITULO IA
-doc.setFontSize(18);
+querySnapshot.forEach((docu)=>{
 
-doc.setTextColor(34,139,34);
+const data = docu.data();
 
-doc.text(
-"Recomendación Inteligente IA",
-20,
-finalY
-);
+filas.push([
+data.correo || "",
+data.tipo || "",
+data.sector || "",
+data.nivel || ""
+]);
 
-// CAJA IA
-doc.setFillColor(255,255,255);
+});
 
-doc.roundedRect(
-15,
-finalY + 5,
-180,
-35,
-5,
-5,
-"F"
-);
+doc.autoTable({
 
-// TEXTO IA
-doc.setTextColor(50);
+startY: doc.lastAutoTable.finalY + 15,
 
-doc.setFontSize(12);
+head:[[
+"Correo",
+"Tipo",
+"Sector",
+"Nivel"
+]],
 
-let mensajeIA =
-document.getElementById("mensajeIA").innerText;
+body: filas
 
-// LIMPIAR EMOJIS
-mensajeIA = mensajeIA.replace(/[^\p{L}\p{N}\s.,]/gu, '');
+});
 
-doc.text(
-mensajeIA,
-22,
-finalY + 18,
-{
-maxWidth: 165
-}
-);
-
-// TENDENCIA
-doc.setFontSize(18);
-
-doc.setTextColor(34,139,34);
-
-doc.text(
-"Tendencia Ambiental",
-20,
-finalY + 55
-);
-
-// CAJA TENDENCIA
-doc.setFillColor(255,255,255);
-
-doc.roundedRect(
-15,
-finalY + 60,
-180,
-28,
-5,
-5,
-"F"
-);
-
-// TEXTO
-doc.setTextColor(50);
-
-doc.setFontSize(12);
-
-doc.text(
-document.getElementById("tendenciaTexto").innerText,
-22,
-finalY + 77,
-{
-maxWidth: 165
-}
-);
 
 // FOOTER
 doc.setFontSize(10);
@@ -1608,6 +1579,7 @@ if(!confirmar){
 
 const querySnapshot =
 await getDocs(collection(db, "reportes"));
+const totalReportes = querySnapshot.size;
 
 for (const documento of querySnapshot.docs){
 
@@ -1786,21 +1758,6 @@ chat.scrollTop = chat.scrollHeight;
 
 </script>
 
-<script>
-if ("serviceWorker" in navigator) {
-
-navigator.serviceWorker
-.register("/service-worker.js")
-
-.then(() => {
-console.log("Service Worker registrado");
-})
-
-.catch((error) => {
-console.log(error);
-});
-
-}
 </script>
 
 </body>
