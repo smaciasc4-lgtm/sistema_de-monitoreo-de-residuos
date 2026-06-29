@@ -15,7 +15,17 @@
     href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 </head>
 
+
+
 <body>
+
+<div id="particles-js"></div>
+
+    <div id="loader">
+    <div class="spinner"></div>
+    <p>Cargando sistema...</p>
+</div>
+
 
     <div id="modalLogin" class="modal-login">
 
@@ -55,29 +65,46 @@ Crear Cuenta
 
     <header>
 
-    <!-- BOTON PEQUEÑO ARRIBA -->
     <div class="barra-superior">
 
         <button class="btn-autores" onclick="mostrarAutores()">
             👨‍💻 Desarrollado por
         </button>
 
+        <button class="btn-salir-header" onclick="cerrarSesion()">
+            🚪 Salir
+        </button>
+
     </div>
 
-    <!-- TITULO -->
-    <h1>🌎 Sistema de Monitoreo de Residuos</h1>
+    <div class="header-centro">
 
-    <p class="subtitulo">
-        Proyecto elaborado por estudiantes de la Universidad Técnica Estatal de Quevedo - Carrera de Ingeniería Ambiental
-    </p>
+        <h1 class="titulo-principal">
+            🌍 Sistema de Monitoreo de Residuos
+        </h1>
 
-    <p id="fechaHora"></p>
+        <p class="subtitulo">
+            Monitoreo Inteligente de Residuos Sólidos
+        </p>
 
-    <button onclick="mostrarMunicipios()">
-🏛 Municipios Responsables
-</button>
+        <p class="subtitulo2">
+            Proyecto elaborado por estudiantes de la Universidad Técnica Estatal de Quevedo
+        </p>
+
+    </div>
+
+    <div class="header-info">
+
+        <div id="fechaHora" class="info-item"></div>
+
+        <button class="btn-municipio" onclick="mostrarMunicipios()">
+            🏛 Municipios Responsables
+        </button>
+
+    </div>
 
 </header>
+
     <!-- MODAL AUTORES -->
 <div id="modalAutores" class="modal-autores">
 
@@ -210,10 +237,6 @@ placeholder="Ingrese sector o barrio">
 
 <button onclick="reiniciarSistema()">
 🗑 Reiniciar Sistema
-</button>
-
-<button onclick="cerrarSesion()" class="btn-salir">
-🚪 Cerrar Sesión
 </button>
 
 </div>
@@ -426,7 +449,10 @@ Aprende conceptos importantes sobre residuos y cuidado ambiental 🌎
     <!-- TABLA -->
     <div class="tabla-contenedor">
 
-        <h2>🗑️ Listado de Residuos</h2>
+     <h2 class="titulo-tabla">
+🗑️ Listado de Reportes Ambientales
+</h2>
+
 
         <table>
 
@@ -458,6 +484,20 @@ Aprende conceptos importantes sobre residuos y cuidado ambiental 🌎
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <script type="module">
+
+function mostrarToast(mensaje){
+
+    const toast = document.createElement("div");
+
+    toast.className = "toast";
+    toast.innerText = mensaje;
+
+    document.body.appendChild(toast);
+
+    setTimeout(()=>{
+        toast.remove();
+    },3000);
+}
 
 import { initializeApp }
 from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
@@ -501,6 +541,8 @@ measurementId: "G-7K7NYG6TKT"
 };
 
 // Inicializar
+
+
 const app = initializeApp(firebaseConfig);
 
 const db = getFirestore(app);
@@ -785,7 +827,7 @@ document.getElementById("tablaReportes").innerHTML = "";
 // LIMPIAR MARCADORES DEL MAPA
 map.eachLayer((layer) => {
 
-if(layer instanceof L.CircleMarker){
+if (layer instanceof L.CircleMarker || layer instanceof L.Marker) {
     map.removeLayer(layer);
 }
 
@@ -860,13 +902,15 @@ window.addEventListener("load", async function(){
     await cargarReportes();
     await actualizarEstadisticas();
 
+    document.getElementById("loader").style.display = "none";
+
     setInterval(async () => {
 
         await cargarReportes();
         await actualizarEstadisticas();
 
     }, 15000);
-   
+
 });
 
 
@@ -888,7 +932,7 @@ correo,
 password
 );
 
-alert("Usuario registrado");
+mostrarToast("Usuario registrado");
 
 }catch(error){
 
@@ -914,7 +958,7 @@ correo,
 password
 );
 
-alert("Sesión iniciada");
+mostrarToast("Sesión iniciada");
 
 document.getElementById("modalLogin").style.display = "none";
 
@@ -962,7 +1006,9 @@ alert("Ingrese correo");
 return;
 }
 
-navigator.geolocation.getCurrentPosition(async function(position){
+navigator.geolocation.getCurrentPosition(
+
+async function(position){
 
 let lat = position.coords.latitude;
 let lon = position.coords.longitude;
@@ -1009,20 +1055,13 @@ L.circleMarker([lat, lon], {
 })
 .addTo(map)
 .bindPopup(
-
-"<b>" + data.tipo + "</b><br>" +
-"📝 " + data.descripcion + "<br>" +
-"🏘 Sector: " + data.sector + "<br>" +
-"⚠ Nivel: " + data.nivel + "<br>" +
-"📧 " + data.correo + "<br>" +
-
-(data.fotoURL ?
-
-'<br><img src="' +
-data.fotoURL +
-'" width="200">' : '')
-
+"<b>" + tipo + "</b><br>" +
+"📝 " + descripcion + "<br>" +
+"🏘 Sector: " + sector + "<br>" +
+"⚠ Nivel: " + nivel + "<br>" +
+"📧 " + correo
 );
+
 // TABLA
 agregarTabla(
 docRef.id,
@@ -1038,9 +1077,18 @@ lon
 // CONTADOR
 await actualizarEstadisticas();
 
-alert("Reporte guardado");
+mostrarToast("Reporte guardado");
 
-});
+
+},
+
+function(error){
+
+alert("No se pudo obtener ubicación: " + error.message);
+
+}
+
+);
 
 }
 
@@ -1359,6 +1407,7 @@ actualizarHora();
 // ============================
 
 window.descargarPDF = async function(){
+    alert("Entró al PDF");
 
 await actualizarEstadisticas();
 await actualizarPorcentajesAnalisis();
@@ -1573,9 +1622,12 @@ doc.text(
 // DESCARGAR
 doc.save("Reporte_Residuos.pdf");
 
+alert("PDF descargado correctamente");
+
 }
 
 window.descargarExcel = async function(){
+    alert("Entró al Excel");
 
 let clave =
 prompt("Ingrese clave de administrador");
@@ -1596,10 +1648,14 @@ tabla,
 {sheet:"Reportes"}
 );
 
+alert("Excel generado");
+
 XLSX.writeFile(
 libro,
 "Reporte_Residuos.xlsx"
 );
+
+alert("Excel descargado");
 
 }
 
@@ -1826,9 +1882,6 @@ alert("Municipios responsables cargados correctamente");
 }
 
 
-alert("Centros ecológicos del Ecuador cargados");
-
-
 window.comoLlegar = function(lat, lon){
 
 navigator.geolocation.getCurrentPosition(function(pos){
@@ -1850,7 +1903,7 @@ window.open(
 
 window.mostrarAutores = function(){
 
-    document.getElementById("modalAutores").style.display = "block";
+    document.getElementById("modalAutores").style.display = "flex";
 
 }
 
@@ -1859,6 +1912,7 @@ window.cerrarAutores = function(){
     document.getElementById("modalAutores").style.display = "none";
 
 }
+
 window.toggleExportar = function(){
 
 let menu =
@@ -1950,7 +2004,75 @@ chat.scrollTop = chat.scrollHeight;
 
 }
 
+
 </script>
+
+<script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+
+<script>
+
+particlesJS("particles-js",{
+
+particles:{
+
+number:{
+value:80
+},
+
+color:{
+value:"#4ade80"
+},
+
+shape:{
+type:"circle"
+},
+
+opacity:{
+value:0.4
+},
+
+size:{
+value:3
+},
+
+line_linked:{
+enable:true,
+distance:150,
+color:"#4ade80",
+opacity:0.25,
+width:1
+},
+
+move:{
+enable:true,
+speed:2
+}
+
+},
+
+interactivity:{
+
+events:{
+onhover:{
+enable:true,
+mode:"grab"
+}
+},
+
+modes:{
+grab:{
+distance:160,
+line_linked:{
+opacity:0.6
+}
+}
+}
+
+},
+
+retina_detect:true
+
+});
 
 </script>
 

@@ -501,6 +501,12 @@ measurementId: "G-7K7NYG6TKT"
 };
 
 // Inicializar
+import {
+Filesystem,
+Directory
+}
+from "@capacitor/filesystem";
+
 const app = initializeApp(firebaseConfig);
 
 const db = getFirestore(app);
@@ -962,7 +968,9 @@ alert("Ingrese correo");
 return;
 }
 
-navigator.geolocation.getCurrentPosition(async function(position){
+navigator.geolocation.getCurrentPosition(
+
+async function(position){
 
 let lat = position.coords.latitude;
 let lon = position.coords.longitude;
@@ -1040,7 +1048,17 @@ await actualizarEstadisticas();
 
 alert("Reporte guardado");
 
-});
+alert("Reporte guardado");
+
+},
+
+function(error){
+
+alert("No se pudo obtener ubicación: " + error.message);
+
+}
+
+);
 
 }
 
@@ -1359,6 +1377,7 @@ actualizarHora();
 // ============================
 
 window.descargarPDF = async function(){
+    alert("Entró al PDF");
 
 await actualizarEstadisticas();
 await actualizarPorcentajesAnalisis();
@@ -1571,11 +1590,20 @@ doc.text(
 );
 
 // DESCARGAR
-doc.save("Reporte_Residuos.pdf");
+const pdfBase64 = doc.output("datauristring").split(",")[1];
+
+await Filesystem.writeFile({
+path: "Reporte_Residuos.pdf",
+data: pdfBase64,
+directory: Directory.Documents
+});
+
+alert("PDF guardado correctamente");
 
 }
 
 window.descargarExcel = async function(){
+    alert("Entró al Excel");
 
 let clave =
 prompt("Ingrese clave de administrador");
@@ -1596,10 +1624,14 @@ tabla,
 {sheet:"Reportes"}
 );
 
+alert("Excel generado");
+
 XLSX.writeFile(
 libro,
 "Reporte_Residuos.xlsx"
 );
+
+alert("Excel descargado");
 
 }
 
@@ -1824,9 +1856,6 @@ Entidad responsable de la gestión de residuos sólidos.
 alert("Municipios responsables cargados correctamente");
 
 }
-
-
-alert("Centros ecológicos del Ecuador cargados");
 
 
 window.comoLlegar = function(lat, lon){
