@@ -63,7 +63,8 @@ Crear Cuenta
 
 </div>
 
-    <header>
+
+<header>
 
     <div class="barra-superior">
 
@@ -90,6 +91,22 @@ Crear Cuenta
         <p class="subtitulo2">
             Proyecto elaborado por estudiantes de la Universidad Técnica Estatal de Quevedo
         </p>
+
+<div class="acciones-movil">
+
+    <button onclick="abrirMenu()">
+        ☰
+    </button>
+
+    <button onclick="abrirReporte()">
+        ➕
+    </button>
+
+    <button onclick="abrirEstadisticas()">
+        📊
+    </button>
+
+</div>
 
     </div>
 
@@ -135,6 +152,25 @@ Crear Cuenta
 
     </div>
 
+</div>
+<!--
+<div class="barra-movil">
+
+<div class="barra-movil">
+
+    <button id="btnMenu" onclick="abrirMenu()">
+        ☰ Menú
+    </button>
+
+    <button id="btnReporte" onclick="abrirReporte()">
+        ➕ Reportar
+    </button>
+
+    <button id="btnEstadisticas" onclick="abrirEstadisticas()">
+        📊 Estadísticas
+    </button>
+</div>
+-->
 </div>
 
     <div class="contenedor">
@@ -551,19 +587,39 @@ const auth = getAuth(app);
 
 
 
-
-
 onAuthStateChanged(auth, (user) => {
 
-if(user){
+    const login = document.querySelector('.modal-login');
 
-document.getElementById("modalLogin").style.display = "none";
+    if(user){
 
-}else{
+        login.classList.add("hide");
 
-document.getElementById("modalLogin").style.display = "flex";
+        setTimeout(() => {
+            login.style.display = "none";
+            login.classList.remove("hide");
+        }, 250);
 
-}
+        document.body.classList.remove("login-activo");
+
+        const notif = document.getElementById("notificacionBienvenida");
+
+notif.classList.add("show");
+
+setTimeout(() => {
+    notif.classList.remove("show");
+}, 2500);
+
+    }else{
+
+        login.style.display = "flex";
+
+        setTimeout(() => {
+            login.classList.add("show");
+        }, 10);
+
+        document.body.classList.add("login-activo");
+    }
 
 });
 
@@ -808,6 +864,9 @@ document.getElementById("total").innerText = total;
 // MAPA
 var map = L.map('map').setView([-0.2299, -78.5249], 13);
 
+let capaMunicipios = L.layerGroup().addTo(map);
+let capaReportes = L.layerGroup().addTo(map);
+
 // OpenStreetMap
 L.tileLayer(
 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -825,13 +884,8 @@ async function cargarReportes(){
 document.getElementById("tablaReportes").innerHTML = "";
 
 // LIMPIAR MARCADORES DEL MAPA
-map.eachLayer((layer) => {
+capaReportes.clearLayers();
 
-if (layer instanceof L.CircleMarker || layer instanceof L.Marker) {
-    map.removeLayer(layer);
-}
-
-});
 
 const querySnapshot =
 await getDocs(collection(db, "reportes"));
@@ -854,19 +908,17 @@ data.lon,
 data.fotoURL
 );
 
-// COLOR
+// COLOR SEGÚN EL NIVEL
 let color = "";
 
-if(data.tipo === "Orgánico"){
+if(data.nivel === "Bajo"){
+    color = "green";
+}
+else if(data.nivel === "Medio"){
     color = "yellow";
 }
-
-if(data.tipo === "Inorgánico"){
+else if(data.nivel === "Alto"){
     color = "red";
-}
-
-if(data.tipo === "Reciclable"){
-    color = "green";
 }
 
 // MAPA
@@ -880,7 +932,7 @@ opacity: 1,
 fillOpacity: 0.8
 
 })
-.addTo(map)
+.addTo(capaReportes)
 .bindPopup(
 
 "<b>" + data.tipo + "</b><br>" +
@@ -1033,16 +1085,14 @@ fecha: new Date()
 // MAPA
 let color = "";
 
-if(tipo === "Orgánico"){
+if(nivel === "Bajo"){
+    color = "green";
+}
+else if(nivel === "Medio"){
     color = "yellow";
 }
-
-if(tipo === "Inorgánico"){
+else if(nivel === "Alto"){
     color = "red";
-}
-
-if(tipo === "Reciclable"){
-    color = "green";
 }
 
 L.circleMarker([lat, lon], {
@@ -1053,7 +1103,7 @@ L.circleMarker([lat, lon], {
     opacity: 1,
     fillOpacity: 0.8
 })
-.addTo(map)
+.addTo(capaReportes)
 .bindPopup(
 "<b>" + tipo + "</b><br>" +
 "📝 " + descripcion + "<br>" +
@@ -1708,177 +1758,133 @@ let centrosMostrados = false;
 
 window.mostrarMunicipios = function(){
 
-// BABAHOYO
-L.marker([-1.80214,-79.53428])
-.addTo(map)
-.bindPopup(`
-<b>🏛 GAD Municipal de Babahoyo</b>
-<br>
-Entidad responsable de la gestión de residuos sólidos.
-<br><br>
-<button onclick="comoLlegar(-1.80214,-79.53428)">
-🏛 Ir al Municipio
-</button>
-`);
+    // Si ya están visibles, ocultarlos
+    if(centrosMostrados){
+        capaMunicipios.clearLayers();
+        centrosMostrados = false;
+        return;
+    }
 
-// BABA
-L.marker([-1.78201,-79.67914])
-.addTo(map)
-.bindPopup(`
-<b>🏛 GAD Municipal de Baba</b>
-<br>
-Entidad responsable de la gestión de residuos sólidos.
-<br><br>
-<button onclick="comoLlegar(-1.78201,-79.67914)">
-🏛 Ir al Municipio
-</button>
-`);
+    centrosMostrados = true;
 
-// MONTALVO
-L.marker([-1.79153,-79.28815])
-.addTo(map)
-.bindPopup(`
-<b>🏛 GAD Municipal de Montalvo</b>
-<br>
-Entidad responsable de la gestión de residuos sólidos.
-<br><br>
-<button onclick="comoLlegar(-1.79153,-79.28815)">
-🏛 Ir al Municipio
-</button>
-`);
+    // BABAHOYO
+    L.marker([-1.80214,-79.53428]).addTo(capaMunicipios).bindPopup(`
+    <b>🏛 GAD Municipal de Babahoyo</b><br>
+    Entidad responsable de la gestión de residuos sólidos.
+    <br><br>
+    <button onclick="comoLlegar(-1.80214,-79.53428)">
+    🏛 Ir al Municipio
+    </button>`);
 
-// PUEBLOVIEJO
-L.marker([-1.55416,-79.53123])
-.addTo(map)
-.bindPopup(`
-<b>🏛 GAD Municipal de Puebloviejo</b>
-<br>
-Entidad responsable de la gestión de residuos sólidos.
-<br><br>
-<button onclick="comoLlegar(-1.55416,-79.53123)">
-🏛 Ir al Municipio
-</button>
-`);
+    // BABA
+    L.marker([-1.78201,-79.67914]).addTo(capaMunicipios).bindPopup(`
+    <b>🏛 GAD Municipal de Baba</b><br>
+    Entidad responsable de la gestión de residuos sólidos.
+    <br><br>
+    <button onclick="comoLlegar(-1.78201,-79.67914)">
+    🏛 Ir al Municipio
+    </button>`);
 
-// URDANETA
-L.marker([-1.57142,-79.47192])
-.addTo(map)
-.bindPopup(`
-<b>🏛 GAD Municipal de Urdaneta</b>
-<br>
-Entidad responsable de la gestión de residuos sólidos.
-<br><br>
-<button onclick="comoLlegar(-1.57142,-79.47192)">
-🏛 Ir al Municipio
-</button>
-`);
+    // MONTALVO
+    L.marker([-1.79153,-79.28815]).addTo(capaMunicipios).bindPopup(`
+    <b>🏛 GAD Municipal de Montalvo</b><br>
+    Entidad responsable de la gestión de residuos sólidos.
+    <br><br>
+    <button onclick="comoLlegar(-1.79153,-79.28815)">
+    🏛 Ir al Municipio
+    </button>`);
 
-// VINCES
-L.marker([-1.55593,-79.74972])
-.addTo(map)
-.bindPopup(`
-<b>🏛 GAD Municipal de Vinces</b>
-<br>
-Entidad responsable de la gestión de residuos sólidos.
-<br><br>
-<button onclick="comoLlegar(-1.55593,-79.74972)">
-🏛 Ir al Municipio
-</button>
-`);
+    // PUEBLOVIEJO
+    L.marker([-1.55416,-79.53123]).addTo(capaMunicipios).bindPopup(`
+    <b>🏛 GAD Municipal de Puebloviejo</b><br>
+    Entidad responsable de la gestión de residuos sólidos.
+    <br><br>
+    <button onclick="comoLlegar(-1.55416,-79.53123)">
+    🏛 Ir al Municipio
+    </button>`);
 
-// QUEVEDO
-L.marker([-1.024167, -79.466000])
-.addTo(map)
-.bindPopup(`
-<b>🏛 GAD Municipal de Quevedo</b>
-<br>
-Entidad responsable de la gestión de residuos sólidos.
-<br><br>
-<button onclick="comoLlegar(-1.024167, -79.466000)">
-🏛 Ir al Municipio
-</button>
-`);
+    // URDANETA
+    L.marker([-1.57142,-79.47192]).addTo(capaMunicipios).bindPopup(`
+    <b>🏛 GAD Municipal de Urdaneta</b><br>
+    Entidad responsable de la gestión de residuos sólidos.
+    <br><br>
+    <button onclick="comoLlegar(-1.57142,-79.47192)">
+    🏛 Ir al Municipio
+    </button>`);
 
-// BUENA FE
-L.marker([-0.89389,-79.48911])
-.addTo(map)
-.bindPopup(`
-<b>🏛 GAD Municipal de Buena Fe</b>
-<br>
-Entidad responsable de la gestión de residuos sólidos.
-<br><br>
-<button onclick="comoLlegar(-0.89389,-79.48911)">
-🏛 Ir al Municipio
-</button>
-`);
+    // VINCES
+    L.marker([-1.55593,-79.74972]).addTo(capaMunicipios).bindPopup(`
+    <b>🏛 GAD Municipal de Vinces</b><br>
+    Entidad responsable de la gestión de residuos sólidos.
+    <br><br>
+    <button onclick="comoLlegar(-1.55593,-79.74972)">
+    🏛 Ir al Municipio
+    </button>`);
 
-// MOCACHE
-L.marker([-1.18131,-79.50853])
-.addTo(map)
-.bindPopup(`
-<b>🏛 GAD Municipal de Mocache</b>
-<br>
-Entidad responsable de la gestión de residuos sólidos.
-<br><br>
-<button onclick="comoLlegar(-1.18131,-79.50853)">
-🏛 Ir al Municipio
-</button>
-`);
+    // QUEVEDO
+    L.marker([-1.024167,-79.466000]).addTo(capaMunicipios).bindPopup(`
+    <b>🏛 GAD Municipal de Quevedo</b><br>
+    Entidad responsable de la gestión de residuos sólidos.
+    <br><br>
+    <button onclick="comoLlegar(-1.024167,-79.466000)">
+    🏛 Ir al Municipio
+    </button>`);
 
-// VALENCIA
-L.marker([-0.72382,-79.35414])
-.addTo(map)
-.bindPopup(`
-<b>🏛 GAD Municipal de Valencia</b>
-<br>
-Entidad responsable de la gestión de residuos sólidos.
-<br><br>
-<button onclick="comoLlegar(-0.72382,-79.35414)">
-🏛 Ir al Municipio
-</button>
-`);
+    // BUENA FE
+    L.marker([-0.89389,-79.48911]).addTo(capaMunicipios).bindPopup(`
+    <b>🏛 GAD Municipal de Buena Fe</b><br>
+    Entidad responsable de la gestión de residuos sólidos.
+    <br><br>
+    <button onclick="comoLlegar(-0.89389,-79.48911)">
+    🏛 Ir al Municipio
+    </button>`);
 
-// VENTANAS
-L.marker([-1.44315,-79.45946])
-.addTo(map)
-.bindPopup(`
-<b>🏛 GAD Municipal de Ventanas</b>
-<br>
-Entidad responsable de la gestión de residuos sólidos.
-<br><br>
-<button onclick="comoLlegar(-1.44315,-79.45946)">
-🏛 Ir al Municipio
-</button>
-`);
+    // MOCACHE
+    L.marker([-1.18131,-79.50853]).addTo(capaMunicipios).bindPopup(`
+    <b>🏛 GAD Municipal de Mocache</b><br>
+    Entidad responsable de la gestión de residuos sólidos.
+    <br><br>
+    <button onclick="comoLlegar(-1.18131,-79.50853)">
+    🏛 Ir al Municipio
+    </button>`);
 
-// QUINSALOMA
-L.marker([-1.21852,-79.31174])
-.addTo(map)
-.bindPopup(`
-<b>🏛 GAD Municipal de Quinsaloma</b>
-<br>
-Entidad responsable de la gestión de residuos sólidos.
-<br><br>
-<button onclick="comoLlegar(-1.21852,-79.31174)">
-🏛 Ir al Municipio
-</button>
-`);
+    // VALENCIA
+    L.marker([-0.72382,-79.35414]).addTo(capaMunicipios).bindPopup(`
+    <b>🏛 GAD Municipal de Valencia</b><br>
+    Entidad responsable de la gestión de residuos sólidos.
+    <br><br>
+    <button onclick="comoLlegar(-0.72382,-79.35414)">
+    🏛 Ir al Municipio
+    </button>`);
 
-// PALENQUE
-L.marker([-1.43615,-79.75621])
-.addTo(map)
-.bindPopup(`
-<b>🏛 GAD Municipal de Palenque</b>
-<br>
-Entidad responsable de la gestión de residuos sólidos.
-<br><br>
-<button onclick="comoLlegar(-1.43615,-79.75621)">
-🏛 Ir al Municipio
-</button>
-`);
+    // VENTANAS
+    L.marker([-1.44315,-79.45946]).addTo(capaMunicipios).bindPopup(`
+    <b>🏛 GAD Municipal de Ventanas</b><br>
+    Entidad responsable de la gestión de residuos sólidos.
+    <br><br>
+    <button onclick="comoLlegar(-1.44315,-79.45946)">
+    🏛 Ir al Municipio
+    </button>`);
 
-alert("Municipios responsables cargados correctamente");
+    // QUINSALOMA
+    L.marker([-1.21852,-79.31174]).addTo(capaMunicipios).bindPopup(`
+    <b>🏛 GAD Municipal de Quinsaloma</b><br>
+    Entidad responsable de la gestión de residuos sólidos.
+    <br><br>
+    <button onclick="comoLlegar(-1.21852,-79.31174)">
+    🏛 Ir al Municipio
+    </button>`);
 
+    // PALENQUE
+    L.marker([-1.43615,-79.75621]).addTo(capaMunicipios).bindPopup(`
+    <b>🏛 GAD Municipal de Palenque</b><br>
+    Entidad responsable de la gestión de residuos sólidos.
+    <br><br>
+    <button onclick="comoLlegar(-1.43615,-79.75621)">
+    🏛 Ir al Municipio
+    </button>`);
+
+    alert("Municipios responsables cargados correctamente");
 }
 
 
@@ -2006,7 +2012,6 @@ chat.scrollTop = chat.scrollHeight;
 
 
 </script>
-
 <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
 
 <script>
@@ -2074,7 +2079,29 @@ retina_detect:true
 
 });
 
+function abrirMenu(){
+
+    alert("Aquí abrirá el menú.");
+
+}
+
+function abrirReporte(){
+
+    alert("Aquí abrirá el formulario.");
+
+}
+
+function abrirEstadisticas(){
+
+    alert("Aquí abrirán las estadísticas.");
+
+}
+
 </script>
+
+<div id="notificacionBienvenida" class="notificacion-bienvenida">
+    👋 Bienvenido
+</div>
 
 </body>
 
