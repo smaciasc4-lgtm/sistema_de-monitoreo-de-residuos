@@ -2087,10 +2087,11 @@ function abrirMenu(){
 
 function abrirReporte(){
 
-    alert("Aquí abrirá el formulario.");
+    const panel = document.querySelector(".panel");
+
+    panel.classList.toggle("activo");
 
 }
-
 function abrirEstadisticas(){
 
     alert("Aquí abrirán las estadísticas.");

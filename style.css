@@ -1940,6 +1940,35 @@ BARRA MOVIL
 
     }
 
+    .panel{
+
+    position: fixed;
+
+    left: 0;
+    right: 0;
+    bottom: -120%;
+
+    width: 100%;
+    height: 78vh;
+
+    margin: 0;
+
+    border-radius: 25px 25px 0 0;
+
+    z-index: 9999;
+
+    transition: .4s ease;
+
+    overflow-y: auto;
+
+}
+
+.panel.activo{
+
+    bottom: 0;
+
+}
+
 }
 
 /*=====================================
@@ -2034,6 +2063,32 @@ BARRA MOVIL
 
         justify-content:center;
 
+    }
+
+}
+/*====================================
+  APP MOVIL - ETAPA 2
+=====================================*/
+@media (max-width:768px){
+
+    /* Ocultar la fecha */
+    #fechaHora{
+        display:none;
+    }
+
+    /* Ocultar botón Municipios */
+    .btn-municipio{
+        display:none;
+    }
+
+    /* Ocultar toda la sección inferior del header */
+    .header-info{
+        display:none;
+    }
+
+    /* El mapa empieza inmediatamente */
+    .contenedor{
+        padding-top:8px;
     }
 
 }
