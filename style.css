@@ -1405,7 +1405,8 @@ margin-top:8px;
 
 /* Todo el contenido encima */
 body.login-activo{
-    overflow:hidden;
+    overflow-x:hidden;
+    overflow-y:scroll;
 }
 
 body:not(.login-activo){
@@ -1920,4 +1921,18 @@ body{
     height: auto !important;
     overflow-y: scroll !important;
     overflow-x: hidden !important;
+}
+html,
+body{
+    height: auto !important;
+    min-height: 100vh !important;
+    overflow-y: auto !important;
+}
+
+.contenedor{
+    height: auto !important;
+}
+
+.panel{
+    height: auto !important;
 }
