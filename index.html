@@ -93,7 +93,6 @@ Crear Cuenta
         </p>
 </div>
 
-    </div>
 
     <div class="header-info">
 
@@ -136,8 +135,6 @@ Crear Cuenta
         </div>
 
     </div>
-
-</div>
 </div>
 
     <div class="contenedor">
@@ -556,9 +553,13 @@ const auth = getAuth(app);
 
 onAuthStateChanged(auth, (user) => {
 
+    console.log("onAuthStateChanged:", user);
+
     const login = document.querySelector('.modal-login');
 
     if(user){
+
+        console.log("Usuario logueado");
 
         login.classList.add("hide");
 
@@ -569,15 +570,9 @@ onAuthStateChanged(auth, (user) => {
 
         document.body.classList.remove("login-activo");
 
-        const notif = document.getElementById("notificacionBienvenida");
-
-notif.classList.add("show");
-
-setTimeout(() => {
-    notif.classList.remove("show");
-}, 2500);
-
     }else{
+
+        console.log("No hay usuario");
 
         login.style.display = "flex";
 
@@ -589,6 +584,7 @@ setTimeout(() => {
     }
 
 });
+
 
 async function actualizarPorcentajesAnalisis(){
 
@@ -989,11 +985,18 @@ alert(error.message);
 
 }
 
-window.cerrarSesion = async function(){
+window.cerrarSesion = async function () {
 
-await signOut(auth);
+    await signOut(auth);
 
-alert("Sesión cerrada");
+    document.body.classList.add("login-activo");
+
+    const login = document.getElementById("modalLogin");
+    login.style.display = "flex";
+    login.classList.remove("hide");
+    login.classList.add("show");
+
+    location.reload();
 
 }
 window.obtenerUbicacion = async function(){

@@ -1841,6 +1841,8 @@ tbody tr:nth-child(even){
 
 }
 .modal-login.show{
+    opacity:1;
+    pointer-events:auto;
     animation: fadeIn .35s ease;
 }
 
@@ -1870,8 +1872,8 @@ tbody tr:nth-child(even){
     }
 }
 .modal-login{
-    opacity:0;
-    pointer-events:none;
+    opacity:1;
+    pointer-events:auto;
 }
 .notificacion-bienvenida{
 
