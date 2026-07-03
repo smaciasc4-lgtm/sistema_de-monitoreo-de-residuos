@@ -1144,6 +1144,9 @@ if(panel.style.display === "block"){
 }else{
 
     panel.style.display = "block";
+    setTimeout(() => {
+    map.invalidateSize();
+}, 300);
     actualizarPorcentajesAnalisis();
 }
 
