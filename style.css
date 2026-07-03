@@ -1,13 +1,12 @@
-html,
 body{
     margin:0;
-    padding:0;
-    min-height:100vh;
-    width:100%;
+    min-height:100%;
+    font-family:'Poppins',sans-serif;
+    background:linear-gradient(135deg,#0f172a,#1e293b);
+    color:white;
     overflow-x:hidden;
     overflow-y:auto;
 }
-
 
 /* HEADER */
 header{
@@ -43,9 +42,8 @@ header h1{
     display:flex;
     gap:20px;
     padding:20px;
-    align-items:flex-start;
-    min-height:fit-content;
 }
+
 /* PANEL */
 .panel{
    width:320px;
@@ -1405,8 +1403,7 @@ margin-top:8px;
 
 /* Todo el contenido encima */
 body.login-activo{
-    overflow-x:hidden;
-    overflow-y:scroll;
+    overflow:hidden;
 }
 
 body:not(.login-activo){
@@ -1911,28 +1908,5 @@ pointer-events: none;
     transform: translateY(0);
 }
 
-html{
-    height: auto !important;
-    overflow-y: scroll !important;
-}
 
-body{
-    min-height: 100vh !important;
-    height: auto !important;
-    overflow-y: scroll !important;
-    overflow-x: hidden !important;
-}
-html,
-body{
-    height: auto !important;
-    min-height: 100vh !important;
-    overflow-y: auto !important;
-}
 
-.contenedor{
-    height: auto !important;
-}
-
-.panel{
-    height: auto !important;
-}
