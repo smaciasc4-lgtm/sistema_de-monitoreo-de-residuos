@@ -1908,5 +1908,12 @@ pointer-events: none;
     transform: translateY(0);
 }
 
+html,
+body{
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    height: auto !important;
+}
+
 
 
