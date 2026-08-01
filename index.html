@@ -12,7 +12,9 @@
     <link rel="stylesheet" href="style.css">
 
     <link rel="stylesheet"
-    href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+    href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
 </head>
 
 
@@ -57,6 +59,10 @@ Ingresar
 
 <button onclick="registrarse()" class="btn-secundario">
 Crear Cuenta
+</button>
+
+<button type="button" onclick="recuperarContrasena()" class="enlace-recuperar">
+¿Olvidaste tu contraseña?
 </button>
 
 </div>
@@ -151,22 +157,48 @@ Crear Cuenta
                 <option>Reciclable</option>
             </select>
 
-           <textarea
+ <textarea
 id="descripcion"
 placeholder="Describe el problema"></textarea>
-
-
 
 <input
 type="text"
 id="sector"
 placeholder="Ingrese sector o barrio">
 
+<label class="titulo-fotos">
+📷 Fotografías del reporte
+</label>
+
+<input
+type="file"
+id="imagenes"
+accept="image/*"
+multiple>
+
+<div id="vistaPrevia"></div>
+
+<div id="progresoCarga" class="progreso-carga" hidden>
+    <div class="barra-progreso"><span id="barraProgreso"></span></div>
+    <small id="textoProgreso">Preparando fotografías...</small>
+</div>
+
 <select id="nivel">
     <option>Bajo</option>
     <option>Medio</option>
     <option>Alto</option>
 </select>
+
+<section class="panel-filtros" aria-label="Filtros de reportes">
+    <h3>🔎 Filtrar reportes</h3>
+    <select id="filtroTipo"><option value="">Todos los residuos</option><option>Orgánico</option><option>Inorgánico</option><option>Reciclable</option></select>
+    <select id="filtroNivel"><option value="">Todos los niveles</option><option>Bajo</option><option>Medio</option><option>Alto</option></select>
+    <select id="filtroEstado"><option value="">Todos los estados</option><option>Pendiente</option><option>En revisión</option><option>Atendido</option><option>Descartado</option></select>
+    <input id="filtroSector" type="search" placeholder="Buscar sector o barrio">
+    <label class="etiqueta-fecha" for="filtroFechaDesde">Desde</label>
+    <input id="filtroFechaDesde" type="date">
+    <button class="boton-secundario" type="button" onclick="limpiarFiltros()">Limpiar filtros</button>
+</section>
 
 
 
@@ -277,6 +309,16 @@ placeholder="Ingrese sector o barrio">
         <p id="cardEstado">Estable</p>
     </div>
 
+    <div class="card-info">
+        <h3>📅 Esta semana</h3>
+        <p id="cardSemana">0</p>
+    </div>
+
+    <div class="card-info">
+        <h3>⏳ Pendientes</h3>
+        <p id="cardPendientes">0</p>
+    </div>
+
 </div>
 
 <!-- CLASIFICACION -->
@@ -329,6 +371,8 @@ margin:auto;
 display:block;
 ">
 </canvas>
+
+<canvas id="graficoMensual" class="grafico-mensual"></canvas>
 
 </div>
 
@@ -446,6 +490,26 @@ Aprende conceptos importantes sobre residuos y cuidado ambiental 🌎
 </div>
 </div>
 
+<!-- DETALLE Y CONFIRMACIÓN DE REPORTES -->
+<div id="modalReporte" class="modal-reporte" hidden>
+    <div class="contenido-reporte" role="dialog" aria-modal="true" aria-labelledby="tituloDetalleReporte">
+        <button class="cerrar-reporte" type="button" onclick="cerrarDetalleReporte()" aria-label="Cerrar">×</button>
+        <div id="contenidoDetalleReporte"></div>
+    </div>
+</div>
+
+<div id="modalConfirmacion" class="modal-reporte" hidden>
+    <div class="contenido-reporte confirmacion-reporte" role="dialog" aria-modal="true">
+        <h2>Confirmar reporte</h2>
+        <p>Revisa la información antes de enviarla.</p>
+        <div id="contenidoConfirmacion"></div>
+        <div class="acciones-modal">
+            <button class="boton-secundario" type="button" onclick="resolverConfirmacionReporte(false)">Volver</button>
+            <button type="button" onclick="resolverConfirmacionReporte(true)">Confirmar y enviar</button>
+        </div>
+    </div>
+</div>
+
     <!-- TABLA -->
     <div class="tabla-contenedor">
 
@@ -463,7 +527,9 @@ Aprende conceptos importantes sobre residuos y cuidado ambiental 🌎
         <th>Descripción</th>
         <th>Sector</th>
         <th>Nivel</th>
-        
+        <th>Estado</th>
+        <th>Prioridad</th>
+        <th>Fotos</th>
         <th>Ubicación</th>
         <th>Acción</th>
     </tr>
@@ -477,7 +543,8 @@ Aprende conceptos importantes sobre residuos y cuidado ambiental 🌎
 
     </div>
 
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
@@ -506,6 +573,7 @@ import {
 getAuth,
 createUserWithEmailAndPassword,
 signInWithEmailAndPassword,
+sendPasswordResetEmail,
 onAuthStateChanged,
 signOut
 }
@@ -515,11 +583,10 @@ import {
 getFirestore,
 collection,
 addDoc,
-getDocs
+getDocs,
+updateDoc
 }
 from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
-
-
 
 // Firebase
 const firebaseConfig = {
@@ -548,6 +615,76 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 const auth = getAuth(app);
+
+// El acceso se registra antes de inicializar el mapa u otros componentes.
+// Así un fallo visual no bloquea el inicio de sesión.
+window.iniciarSesion = async function() {
+    const correo = document.getElementById("correo").value.trim();
+    const password = document.getElementById("password").value;
+    if (!correo || !password) return alert("Ingresa tu correo y contraseña.");
+    try {
+        await signInWithEmailAndPassword(auth, correo, password);
+        mostrarToast("Sesión iniciada");
+        document.getElementById("modalLogin").style.display = "none";
+    } catch (error) {
+        const mensajes = {
+            "auth/invalid-credential": "El correo o la contraseña no coinciden.",
+            "auth/wrong-password": "La contraseña no es correcta.",
+            "auth/user-not-found": "No existe una cuenta con este correo.",
+            "auth/too-many-requests": "Demasiados intentos. Espera unos minutos o usa la recuperación de contraseña.",
+            "auth/network-request-failed": "No hay conexión con Firebase. Verifica tu internet."
+        };
+        alert(mensajes[error.code] || `No se pudo iniciar sesión (${error.code || "error desconocido"}).`);
+    }
+};
+
+window.recuperarContrasena = async function() {
+    const correo = document.getElementById("correo").value.trim();
+    if (!correo) return alert("Escribe primero el correo de tu cuenta.");
+    try {
+        auth.languageCode = "es";
+        await sendPasswordResetEmail(auth, correo);
+        alert("Correo de recuperación enviado. Revisa Spam y Promociones.");
+    } catch (error) {
+        alert(`No se pudo enviar la recuperación (${error.code || "error desconocido"}).`);
+    }
+};
+
+// SUPABASE STORAGE: copia la clave Publishable/anon desde Supabase > Connect.
+// Nunca uses aquí la clave service_role.
+const SUPABASE_URL = "https://vfcghwbnffhkrtfdfxxu.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_20x7WD1Bm4rwdNJNUgPRhg_hPw9PWL4";
+let supabase = null;
+async function obtenerClienteSupabase() {
+    if (!supabase) {
+        const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
+        supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+    }
+    return supabase;
+}
+const BUCKET_FOTOS = "fotos-reportes";
+
+async function subirImagenesASupabase(imagenes) {
+    if (SUPABASE_PUBLISHABLE_KEY.includes("PEGA_AQUI")) {
+        throw new Error("Falta configurar la clave Publishable de Supabase en index.html.");
+    }
+    const urls = [];
+    for (const imagen of imagenes) {
+        if (!imagen.type.startsWith("image/")) throw new Error("Solo se pueden subir imágenes.");
+        if (imagen.size > 5 * 1024 * 1024) throw new Error("Cada fotografía debe pesar máximo 5 MB.");
+
+        const extension = imagen.name.split(".").pop() || "jpg";
+        const ruta = `reportes/${Date.now()}-${crypto.randomUUID()}.${extension}`;
+        const { error } = await supabase.storage.from(BUCKET_FOTOS).upload(ruta, imagen, {
+            contentType: imagen.type,
+            upsert: false
+        });
+        if (error) throw error;
+        const { data } = supabase.storage.from(BUCKET_FOTOS).getPublicUrl(ruta);
+        urls.push(data.publicUrl);
+    }
+    return urls;
+}
 
 
 
@@ -824,18 +961,55 @@ document.getElementById("tendenciaTexto").textContent =
 document.getElementById("total").innerText = total;
 }
 
-// MAPA
-var map = L.map('map').setView([-0.2299, -78.5249], 13);
+// MAPA: vista nacional que incluye Ecuador continental y Galápagos.
+const limitesEcuadorGalapagos = L.latLngBounds(
+    [-5.3, -92.7],
+    [1.8, -74.6]
+);
+
+var map = L.map('map', {
+    zoomControl: false,
+    minZoom: 4,
+    maxZoom: 19,
+    maxBounds: limitesEcuadorGalapagos.pad(0.12),
+    maxBoundsViscosity: 0.9,
+    worldCopyJump: false
+});
+
+map.fitBounds(limitesEcuadorGalapagos, { padding: [18, 18], maxZoom: 5 });
+L.control.zoom({ position: 'bottomright' }).addTo(map);
 
 let capaMunicipios = L.layerGroup().addTo(map);
-let capaReportes = L.layerGroup().addTo(map);
+let capaReportes = typeof L.markerClusterGroup === "function"
+    ? L.markerClusterGroup({
+        showCoverageOnHover: false,
+        spiderfyOnMaxZoom: true,
+        maxClusterRadius: 45
+    })
+    : L.layerGroup();
+capaReportes.addTo(map);
 
 // OpenStreetMap
 L.tileLayer(
 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
 {
-attribution:'OpenStreetMap'
+attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors',
+maxZoom: 19
 }).addTo(map);
+
+const controlEcuador = L.control({ position: 'topright' });
+controlEcuador.onAdd = function() {
+    const control = L.DomUtil.create('button', 'control-ecuador');
+    control.type = 'button';
+    control.innerHTML = '🇪🇨 Ecuador + Galápagos';
+    control.title = 'Volver a la vista nacional';
+    L.DomEvent.disableClickPropagation(control);
+    L.DomEvent.on(control, 'click', () => {
+        map.fitBounds(limitesEcuadorGalapagos, { padding: [18, 18], maxZoom: 5 });
+    });
+    return control;
+};
+controlEcuador.addTo(map);
 
 // Contador
 
@@ -868,7 +1042,7 @@ data.sector,
 data.nivel,
 data.lat,
 data.lon,
-data.fotoURL
+data.fotos || []
 );
 
 // COLOR SEGÚN EL NIVEL
@@ -960,7 +1134,7 @@ alert(error.message);
 window.iniciarSesion = async function(){
 
 let correo =
-document.getElementById("correo").value;
+document.getElementById("correo").value.trim();
 
 let password =
 document.getElementById("password").value;
@@ -979,7 +1153,14 @@ document.getElementById("modalLogin").style.display = "none";
 
 }catch(error){
 
-alert(error.message);
+const mensajes = {
+    "auth/invalid-credential": "El correo o la contraseña no coinciden.",
+    "auth/wrong-password": "La contraseña no es correcta.",
+    "auth/user-not-found": "No existe una cuenta con este correo.",
+    "auth/too-many-requests": "Demasiados intentos. Espera unos minutos o restablece la contraseña.",
+    "auth/network-request-failed": "No hay conexión con Firebase. Verifica tu internet e inténtalo de nuevo."
+};
+alert(mensajes[error.code] || "No se pudo iniciar sesión: " + error.message);
 
 }
 
@@ -1035,6 +1216,14 @@ async function(position){
 let lat = position.coords.latitude;
 let lon = position.coords.longitude;
 
+let fotos = [];
+try {
+    fotos = await subirImagenesASupabase(imagenesSeleccionadas);
+} catch (error) {
+    alert("No se pudieron subir las fotografías: " + error.message);
+    return;
+}
+
 // GUARDAR
 
 
@@ -1048,6 +1237,7 @@ sector,
 nivel,
 lat,
 lon,
+fotos,
 fecha: new Date()
 }
 );
@@ -1079,7 +1269,8 @@ L.circleMarker([lat, lon], {
 "📝 " + descripcion + "<br>" +
 "🏘 Sector: " + sector + "<br>" +
 "⚠ Nivel: " + nivel + "<br>" +
-"📧 " + correo
+"📧 " + correo +
+(fotos.length ? "<br>📷 " + fotos.map((foto, indice) => `<a href=\"${foto}\" target=\"_blank\">Foto ${indice + 1}</a>`).join(" · ") : "")
 );
 
 // TABLA
@@ -1091,13 +1282,19 @@ descripcion,
 sector,
 nivel,
 lat,
-lon
+lon,
+fotos
 );
 
 // CONTADOR
 await actualizarEstadisticas();
 
-mostrarToast("Reporte guardado");
+imagenesSeleccionadas = [];
+document.getElementById("vistaPrevia").innerHTML = "";
+document.getElementById("descripcion").value = "";
+document.getElementById("sector").value = "";
+
+mostrarToast("Reporte y fotografías guardados");
 
 
 },
@@ -1365,7 +1562,7 @@ sector,
 nivel,
 lat,
 lon,
-fotoURL
+fotos = []
 )
 {
 
@@ -1379,6 +1576,7 @@ let fila = `
 <td>${descripcion}</td>
 <td>${sector}</td>
 <td>${nivel}</td>
+<td>${fotos.length ? fotos.map((foto, indice) => `<a href="${foto}" target="_blank" rel="noopener">Foto ${indice + 1}</a>`).join("<br>") : "Sin fotos"}</td>
 <td>${lat.toFixed(4)}, ${lon.toFixed(4)}</td>
 
 <td>
@@ -1409,6 +1607,191 @@ auth.currentUser.email === correo
 tabla.innerHTML += fila;
 
 }
+// ===========================
+// GESTIÓN, FILTROS Y SEGUIMIENTO DE REPORTES
+// ===========================
+let reportesActuales = [];
+let resolverConfirmacion = null;
+
+function escaparHTML(valor = "") {
+    return String(valor).replace(/[&<>'"]/g, caracter => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[caracter]));
+}
+
+window.recuperarContrasena = async function(){
+    const correo = document.getElementById("correo").value.trim();
+    if(!correo){
+        alert("Escribe el correo de la cuenta administradora primero.");
+        return;
+    }
+    try{
+        auth.languageCode = "es";
+        await sendPasswordResetEmail(auth, correo);
+        alert("Te enviamos un correo para restablecer tu contraseña. Revisa también Spam o Promociones.");
+    }catch(error){
+        alert("No se pudo enviar el correo de recuperación: " + error.message);
+    }
+}
+
+function fechaReporte(reporte) {
+    return reporte.fecha?.toDate ? reporte.fecha.toDate() : new Date(reporte.fecha || Date.now());
+}
+
+function prioridadReporte(reporte, todos = reportesActuales) {
+    const cercanos = todos.filter(otro => otro.id !== reporte.id && Math.hypot((reporte.lat - otro.lat) * 111, (reporte.lon - otro.lon) * 111) < 0.8).length;
+    if (reporte.nivel === "Alto" && cercanos > 0) return "Crítica";
+    if (reporte.nivel === "Alto" || (reporte.nivel === "Medio" && cercanos > 1)) return "Alta";
+    if (reporte.nivel === "Medio") return "Media";
+    return "Baja";
+}
+
+function colorReporte(reporte) {
+    if (reporte.estado === "Atendido" || reporte.estado === "Descartado") return "#64748b";
+    return reporte.nivel === "Alto" ? "#ef4444" : reporte.nivel === "Medio" ? "#f59e0b" : "#22c55e";
+}
+
+function obtenerFiltros() {
+    return {
+        tipo: document.getElementById("filtroTipo").value,
+        nivel: document.getElementById("filtroNivel").value,
+        estado: document.getElementById("filtroEstado").value,
+        sector: document.getElementById("filtroSector").value.trim().toLowerCase(),
+        fecha: document.getElementById("filtroFechaDesde").value
+    };
+}
+
+function aplicarFiltros() {
+    const filtros = obtenerFiltros();
+    const visibles = reportesActuales.filter(reporte =>
+        (!filtros.tipo || reporte.tipo === filtros.tipo) &&
+        (!filtros.nivel || reporte.nivel === filtros.nivel) &&
+        (!filtros.estado || reporte.estado === filtros.estado) &&
+        (!filtros.sector || (reporte.sector || "").toLowerCase().includes(filtros.sector)) &&
+        (!filtros.fecha || fechaReporte(reporte) >= new Date(`${filtros.fecha}T00:00:00`))
+    );
+    renderizarReportes(visibles);
+}
+
+window.limpiarFiltros = function() {
+    ["filtroTipo", "filtroNivel", "filtroEstado", "filtroSector", "filtroFechaDesde"].forEach(id => document.getElementById(id).value = "");
+    aplicarFiltros();
+};
+
+function renderizarReportes(reportes) {
+    const tabla = document.getElementById("tablaReportes");
+    tabla.innerHTML = "";
+    capaReportes.clearLayers();
+
+    reportes.forEach(reporte => {
+        const prioridad = prioridadReporte(reporte);
+        const puedeGestionar = auth.currentUser?.email === reporte.correo;
+        const fotos = Array.isArray(reporte.fotos) ? reporte.fotos : [];
+        const fila = document.createElement("tr");
+        fila.innerHTML = `
+            <td>${escaparHTML(reporte.correo)}</td><td>${escaparHTML(reporte.tipo)}</td>
+            <td>${escaparHTML(reporte.descripcion)}</td><td>${escaparHTML(reporte.sector)}</td>
+            <td><span class="nivel nivel-${reporte.nivel.toLowerCase()}">${escaparHTML(reporte.nivel)}</span></td>
+            <td><span class="estado estado-${reporte.estado.toLowerCase().replace(/[^a-záéíóúñ]/gi, "")}">${escaparHTML(reporte.estado)}</span></td>
+            <td><span class="prioridad prioridad-${prioridad.toLowerCase()}">${prioridad}</span></td>
+            <td>${fotos.length ? `${fotos.length} foto${fotos.length > 1 ? "s" : ""}` : "Sin fotos"}</td>
+            <td>${Number(reporte.lat).toFixed(4)}, ${Number(reporte.lon).toFixed(4)}</td>
+            <td><button class="btn-detalle" type="button" onclick="verDetalleReporte('${reporte.id}')">Ver detalle</button>
+            ${puedeGestionar ? `<select class="selector-estado" onchange="actualizarEstadoReporte('${reporte.id}', this.value)">${["Pendiente","En revisión","Atendido","Descartado"].map(estado => `<option ${estado === reporte.estado ? "selected" : ""}>${estado}</option>`).join("")}</select>` : "🔒"}</td>`;
+        tabla.appendChild(fila);
+
+        const marcador = L.circleMarker([reporte.lat, reporte.lon], { radius: prioridad === "Crítica" ? 13 : 10, fillColor: colorReporte(reporte), color: "#fff", weight: 2, fillOpacity: .9 });
+        marcador.bindPopup(`<b>${escaparHTML(reporte.tipo)}</b><br>⚠ ${escaparHTML(reporte.nivel)} · ${escaparHTML(reporte.estado)}<br>🏘 ${escaparHTML(reporte.sector)}<br><button class="btn-popup" onclick="verDetalleReporte('${reporte.id}')">Ver detalle</button>`);
+        capaReportes.addLayer(marcador);
+    });
+}
+
+async function cargarReportes() {
+    const snapshot = await getDocs(collection(db, "reportes"));
+    reportesActuales = snapshot.docs.map(documento => ({ id: documento.id, estado: "Pendiente", ...documento.data() }));
+    aplicarFiltros();
+    actualizarEstadisticas();
+}
+
+function actualizarEstadisticas() {
+    const total = reportesActuales.length;
+    const semana = new Date(); semana.setDate(semana.getDate() - 7);
+    const pendientes = reportesActuales.filter(r => r.estado === "Pendiente" || r.estado === "En revisión").length;
+    const organicos = reportesActuales.filter(r => r.tipo === "Orgánico").length;
+    const inorganicos = reportesActuales.filter(r => r.tipo === "Inorgánico").length;
+    const reciclables = reportesActuales.filter(r => r.tipo === "Reciclable").length;
+    document.getElementById("total").textContent = total;
+    document.getElementById("organicos").textContent = organicos;
+    document.getElementById("inorganicos").textContent = inorganicos;
+    document.getElementById("reciclables").textContent = reciclables;
+    document.getElementById("cardTotal").textContent = total;
+    document.getElementById("cardCriticos").textContent = reportesActuales.filter(r => prioridadReporte(r) === "Crítica").length;
+    document.getElementById("cardSemana").textContent = reportesActuales.filter(r => fechaReporte(r) >= semana).length;
+    document.getElementById("cardPendientes").textContent = pendientes;
+    const riesgo = reportesActuales.some(r => prioridadReporte(r) === "Crítica") ? "ALTO" : reportesActuales.some(r => r.nivel === "Medio" || r.nivel === "Alto") ? "MEDIO" : "BAJO";
+    document.getElementById("cardRiesgo").textContent = riesgo;
+    document.getElementById("cardEstado").textContent = pendientes ? "En seguimiento" : "Estable";
+    document.getElementById("orgTotal").textContent = total ? `${Math.round(organicos * 100 / total)}%` : "0%";
+    document.getElementById("inoTotal").textContent = total ? `${Math.round(inorganicos * 100 / total)}%` : "0%";
+    document.getElementById("recTotal").textContent = total ? `${Math.round(reciclables * 100 / total)}%` : "0%";
+    document.getElementById("ecoScore").textContent = Math.max(0, 100 - pendientes * 4 - reportesActuales.filter(r => r.nivel === "Alto").length * 6);
+    actualizarGraficos(organicos, inorganicos, reciclables);
+}
+
+function actualizarGraficos(organicos, inorganicos, reciclables) {
+    if (window.miGrafico) window.miGrafico.destroy();
+    window.miGrafico = new Chart(document.getElementById("graficoResiduos"), { type: "doughnut", data: { labels: ["Orgánicos", "Inorgánicos", "Reciclables"], datasets: [{ data: [organicos, inorganicos, reciclables], backgroundColor: ["#22c55e", "#ef4444", "#38bdf8"] }] }, options: { responsive: true, plugins: { title: { display: true, text: "Distribución de residuos", color: "white" }, legend: { labels: { color: "white" } } } } });
+    const meses = Array.from({length: 6}, (_, i) => { const fecha = new Date(); fecha.setMonth(fecha.getMonth() - 5 + i); return fecha; });
+    const valores = meses.map(mes => reportesActuales.filter(r => { const fecha = fechaReporte(r); return fecha.getMonth() === mes.getMonth() && fecha.getFullYear() === mes.getFullYear(); }).length);
+    if (window.graficoMensual) window.graficoMensual.destroy();
+    window.graficoMensual = new Chart(document.getElementById("graficoMensual"), { type: "line", data: { labels: meses.map(m => m.toLocaleDateString("es-EC", {month:"short"})), datasets: [{ label: "Reportes por mes", data: valores, borderColor: "#4ade80", backgroundColor: "rgba(74,222,128,.18)", fill: true, tension: .35 }] }, options: { responsive: true, plugins: { legend: { labels: { color: "white" } } }, scales: { x: { ticks: { color: "white" } }, y: { beginAtZero:true, ticks: { color: "white" } } } } });
+}
+
+window.verDetalleReporte = function(id) {
+    const reporte = reportesActuales.find(r => r.id === id); if (!reporte) return;
+    const fotos = (reporte.fotos || []).map(url => `<a href="${escaparHTML(url)}" target="_blank" rel="noopener"><img src="${escaparHTML(url)}" alt="Fotografía del reporte"></a>`).join("") || "<p>Este reporte no tiene fotografías.</p>";
+    document.getElementById("contenidoDetalleReporte").innerHTML = `<h2 id="tituloDetalleReporte">${escaparHTML(reporte.tipo)}</h2><p class="detalle-meta">${escaparHTML(reporte.estado)} · Prioridad ${prioridadReporte(reporte)}</p><p>${escaparHTML(reporte.descripcion)}</p><dl><dt>Sector</dt><dd>${escaparHTML(reporte.sector)}</dd><dt>Nivel</dt><dd>${escaparHTML(reporte.nivel)}</dd><dt>Fecha</dt><dd>${fechaReporte(reporte).toLocaleString("es-EC")}</dd></dl><div class="galeria-detalle">${fotos}</div>`;
+    document.getElementById("modalReporte").hidden = false;
+};
+window.cerrarDetalleReporte = () => document.getElementById("modalReporte").hidden = true;
+window.actualizarEstadoReporte = async function(id, estado) { const reporte = reportesActuales.find(r => r.id === id); if (!reporte || auth.currentUser?.email !== reporte.correo) return; await updateDoc(doc(db, "reportes", id), { estado }); mostrarToast("Estado actualizado"); await cargarReportes(); };
+
+function actualizarProgresoCarga(indice, total) { const caja = document.getElementById("progresoCarga"); caja.hidden = false; document.getElementById("barraProgreso").style.width = `${Math.round(indice * 100 / total)}%`; document.getElementById("textoProgreso").textContent = `Subiendo fotografía ${indice} de ${total}...`; }
+async function subirImagenesASupabase(imagenes) { const urls=[]; const cliente = await obtenerClienteSupabase(); for (let i=0; i<imagenes.length; i++) { const imagen=imagenes[i]; if(!imagen.type.startsWith("image/") || imagen.size > 5 * 1024 * 1024) throw new Error("Cada fotografía debe ser una imagen de máximo 5 MB."); actualizarProgresoCarga(i, imagenes.length); const ruta=`reportes/${Date.now()}-${crypto.randomUUID()}.${imagen.name.split(".").pop() || "jpg"}`; const {error}=await cliente.storage.from(BUCKET_FOTOS).upload(ruta, imagen,{contentType:imagen.type,upsert:false}); if(error) throw error; urls.push(cliente.storage.from(BUCKET_FOTOS).getPublicUrl(ruta).data.publicUrl); actualizarProgresoCarga(i+1, imagenes.length); } return urls; }
+
+window.mostrarConfirmacionReporte = datos => new Promise(resolve => { resolverConfirmacion = resolve; document.getElementById("contenidoConfirmacion").innerHTML = `<p><b>Tipo:</b> ${escaparHTML(datos.tipo)}</p><p><b>Sector:</b> ${escaparHTML(datos.sector)}</p><p><b>Nivel:</b> ${escaparHTML(datos.nivel)}</p><p><b>Ubicación:</b> ${datos.lat.toFixed(5)}, ${datos.lon.toFixed(5)}</p><p><b>Fotografías:</b> ${datos.fotos} seleccionada(s)</p>`; document.getElementById("modalConfirmacion").hidden = false; });
+window.resolverConfirmacionReporte = aceptar => { document.getElementById("modalConfirmacion").hidden = true; resolverConfirmacion?.(aceptar); resolverConfirmacion = null; };
+
+window.obtenerUbicacion = async function() {
+    if (!auth.currentUser) return alert("Debe iniciar sesión");
+    const tipo = document.getElementById("tipo").value;
+    const descripcion = document.getElementById("descripcion").value.trim();
+    const sector = document.getElementById("sector").value.trim();
+    const nivel = document.getElementById("nivel").value;
+    if (!descripcion || !sector) return alert("Completa la descripción y el sector antes de continuar.");
+    try {
+        const posicion = await new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 15000 }));
+        const lat = posicion.coords.latitude, lon = posicion.coords.longitude;
+        const confirmar = await mostrarConfirmacionReporte({ tipo, sector, nivel, lat, lon, fotos: imagenesSeleccionadas.length });
+        if (!confirmar) return;
+        const fotos = await subirImagenesASupabase(imagenesSeleccionadas);
+        await addDoc(collection(db, "reportes"), { correo: auth.currentUser.email, tipo, descripcion, sector, nivel, estado: "Pendiente", lat, lon, fotos, fecha: new Date() });
+        document.getElementById("progresoCarga").hidden = true;
+        imagenesSeleccionadas = []; document.getElementById("vistaPrevia").innerHTML = "";
+        document.getElementById("descripcion").value = ""; document.getElementById("sector").value = "";
+        mostrarToast("Reporte guardado y enviado para atención");
+        await cargarReportes();
+    } catch (error) {
+        document.getElementById("progresoCarga").hidden = true;
+        alert("No se pudo enviar el reporte: " + error.message);
+    }
+};
+
+["filtroTipo","filtroNivel","filtroEstado","filtroFechaDesde"].forEach(id => document.getElementById(id).addEventListener("change", aplicarFiltros));
+document.getElementById("filtroSector").addEventListener("input", aplicarFiltros);
+
+async function actualizarPorcentajesAnalisis() {
+    actualizarEstadisticas();
+}
+
 function actualizarHora(){
 
 let ahora = new Date();
@@ -1425,6 +1808,33 @@ actualizarHora();
 // ============================
 // PDF PREMIUM MODERNO
 // ============================
+
+async function cargarFotoParaPDF(url) {
+    const respuesta = await fetch(url);
+    if (!respuesta.ok) throw new Error("No fue posible descargar la fotografía.");
+
+    const blob = await respuesta.blob();
+    const imagen = await new Promise((resolve, reject) => {
+        const elemento = new Image();
+        elemento.onload = () => resolve(elemento);
+        elemento.onerror = () => reject(new Error("Formato de imagen no compatible con el PDF."));
+        elemento.src = URL.createObjectURL(blob);
+    });
+
+    const lienzo = document.createElement("canvas");
+    lienzo.width = imagen.naturalWidth;
+    lienzo.height = imagen.naturalHeight;
+    const contexto = lienzo.getContext("2d");
+    contexto.fillStyle = "#ffffff";
+    contexto.fillRect(0, 0, lienzo.width, lienzo.height);
+    contexto.drawImage(imagen, 0, 0);
+
+    return {
+        data: lienzo.toDataURL("image/jpeg", 0.88),
+        width: imagen.naturalWidth,
+        height: imagen.naturalHeight
+    };
+}
 
 window.descargarPDF = async function(){
     alert("Entró al PDF");
@@ -1626,6 +2036,79 @@ head:[[
 body: filas
 
 });
+
+// GALERIA DE FOTOGRAFIAS
+const reportesConFotos = [];
+
+querySnapshot.forEach((docu) => {
+    const data = docu.data();
+    const fotos = Array.isArray(data.fotos)
+        ? data.fotos
+        : (data.fotoURL ? [data.fotoURL] : []);
+
+    if (fotos.length) {
+        reportesConFotos.push({
+            tipo: data.tipo || "Sin tipo",
+            sector: data.sector || "Sin sector",
+            fotos
+        });
+    }
+});
+
+if (reportesConFotos.length) {
+    doc.addPage();
+    let yFoto = 24;
+    let numeroFoto = 0;
+
+    const encabezadoFotos = () => {
+        doc.setFillColor(34,139,34);
+        doc.rect(0, 0, 210, 16, "F");
+        doc.setTextColor(255,255,255);
+        doc.setFontSize(14);
+        doc.text("Fotografías de los reportes", 15, 10);
+        doc.setTextColor(60);
+        doc.setFontSize(9);
+    };
+
+    encabezadoFotos();
+
+    for (const reporte of reportesConFotos) {
+        for (const url of reporte.fotos) {
+            try {
+                const foto = await cargarFotoParaPDF(url);
+                const anchoMaximo = 82;
+                const altoMaximo = 60;
+                const proporcion = Math.min(anchoMaximo / foto.width, altoMaximo / foto.height);
+                const ancho = foto.width * proporcion;
+                const alto = foto.height * proporcion;
+                const columna = numeroFoto % 2;
+                const x = columna === 0 ? 18 : 110;
+
+                if (columna === 0 && yFoto + 78 > 280) {
+                    doc.addPage();
+                    encabezadoFotos();
+                    yFoto = 24;
+                }
+
+                doc.setDrawColor(210, 220, 210);
+                doc.roundedRect(x - 3, yFoto - 3, 88, 70, 3, 3, "S");
+                doc.addImage(foto.data, "JPEG", x + (anchoMaximo - ancho) / 2, yFoto, ancho, alto);
+                doc.setFontSize(8);
+                doc.text(
+                    `Tipo: ${reporte.tipo} | Sector: ${reporte.sector}`,
+                    x,
+                    yFoto + 64,
+                    { maxWidth: 80 }
+                );
+
+                numeroFoto++;
+                if (numeroFoto % 2 === 0) yFoto += 78;
+            } catch (error) {
+                console.warn("No se pudo añadir una fotografía al PDF:", error);
+            }
+        }
+    }
+}
 
 
 // FOOTER
@@ -1903,6 +2386,74 @@ menu.style.display = "none";
 menu.style.display = "block";
 
 }
+
+}
+
+// ===========================
+// GALERÍA DE IMÁGENES
+// ===========================
+
+let imagenesSeleccionadas = [];
+
+const inputImagenes = document.getElementById("imagenes");
+
+inputImagenes.addEventListener("change", function(){
+
+    for(const archivo of this.files){
+
+        imagenesSeleccionadas.push(archivo);
+
+    }
+
+    mostrarVistaPrevia();
+
+    this.value = "";
+
+});
+
+function mostrarVistaPrevia(){
+
+    const vista = document.getElementById("vistaPrevia");
+
+    vista.innerHTML = "";
+
+    imagenesSeleccionadas.forEach((archivo, indice)=>{
+
+        const lector = new FileReader();
+
+        lector.onload = function(e){
+
+            const contenedor = document.createElement("div");
+
+            contenedor.className = "contenedor-imagen";
+
+            contenedor.innerHTML = `
+
+                <img src="${e.target.result}">
+
+                <button
+                class="btnEliminarImagen"
+                onclick="eliminarImagen(${indice})">
+                ✖
+                </button>
+
+            `;
+
+            vista.appendChild(contenedor);
+
+        }
+
+        lector.readAsDataURL(archivo);
+
+    });
+
+}
+
+window.eliminarImagen = function(indice){
+
+    imagenesSeleccionadas.splice(indice,1);
+
+    mostrarVistaPrevia();
 
 }
 
