@@ -3,7 +3,15 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Residuos">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="apple-touch-icon" href="icon.svg">
+    <link rel="icon" type="image/svg+xml" href="icon.svg">
 
     <title>Mapa de Residuos</title>
 
@@ -11,10 +19,7 @@
 
     <link rel="stylesheet" href="style.css">
 
-    <link rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"/>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 </head>
 
 
@@ -29,45 +34,23 @@
 </div>
 
 
-    <div id="modalLogin" class="modal-login">
+    <div id="modalLogin" class="modal-login" hidden aria-hidden="true" onclick="cerrarAccesoAdministrador(event)">
+        <div class="contenido-login" role="dialog" aria-modal="true" aria-labelledby="tituloAccesoAdmin">
+            <button class="cerrar-login" type="button" onclick="cerrarAccesoAdministrador()" aria-label="Cerrar acceso de administrador">×</button>
+            <div class="logo-login" aria-hidden="true">🔐</div>
+            <h1 id="tituloAccesoAdmin">Acceso administrador</h1>
+            <p class="texto-login">Uso exclusivo para gestionar los reportes</p>
 
-<div class="contenido-login">
+            <label class="etiqueta-login" for="correo">Correo</label>
+            <input type="email" id="correo" placeholder="Correo del administrador" autocomplete="username">
 
-<div class="logo-login">
-🌎
-</div>
+            <label class="etiqueta-login" for="password">Contraseña</label>
+            <input type="password" id="password" placeholder="Contraseña" autocomplete="current-password">
 
-<h1>Sistema Ambiental</h1>
-
-<p class="texto-login">
-Monitoreo Inteligente de Residuos
-</p>
-
-<input
-type="email"
-id="correo"
-placeholder="Ingrese su correo">
-
-<input
-type="password"
-id="password"
-placeholder="Ingrese contraseña">
-
-<button onclick="iniciarSesion()">
-Ingresar
-</button>
-
-<button onclick="registrarse()" class="btn-secundario">
-Crear Cuenta
-</button>
-
-<button type="button" onclick="recuperarContrasena()" class="enlace-recuperar">
-¿Olvidaste tu contraseña?
-</button>
-
-</div>
-
-</div>
+            <button id="btnIngresarAdmin" type="button" onclick="iniciarSesion()">Ingresar</button>
+            <p id="mensajeAccesoAdmin" class="mensaje-acceso-admin" role="status" aria-live="polite"></p>
+        </div>
+    </div>
 
 
 <header>
@@ -78,9 +61,23 @@ Crear Cuenta
             👨‍💻 Desarrollado por
         </button>
 
-        <button class="btn-salir-header" onclick="cerrarSesion()">
-            🚪 Salir
-        </button>
+        <div class="acciones-acceso">
+            <button id="btnAccesoAdministrador" class="btn-acceso-admin" type="button" onclick="abrirAccesoAdministrador()">
+                🔐 Acceso administrador
+            </button>
+
+            <div id="perfilUsuario" class="perfil-usuario" hidden>
+                <span class="avatar-usuario" aria-hidden="true">👤</span>
+                <div>
+                    <strong id="nombreUsuario">—</strong>
+                    <small id="rolUsuario">Administrador</small>
+                </div>
+            </div>
+
+            <button id="btnCerrarSesion" class="btn-salir-header" type="button" onclick="cerrarSesion()" hidden>
+                🚪 Salir
+            </button>
+        </div>
 
     </div>
 
@@ -105,12 +102,35 @@ Crear Cuenta
         <div id="fechaHora" class="info-item"></div>
 
         <button class="btn-municipio" onclick="mostrarMunicipios()">
-            🏛 Municipios Responsables
+            🏛 GAD del Ecuador
         </button>
+        <div class="buscador-gad">
+            <input id="buscarGad" type="search" placeholder="Buscar GAD, ej. Pichincha">
+            <button type="button" onclick="buscarGadEnMapa()">Buscar</button>
+        </div>
 
     </div>
 
-</header>
+    </header>
+
+<section class="resumen-tablero" aria-label="Resumen del sistema">
+    <article class="tarjeta-kpi">
+        <small>Reportes registrados</small>
+        <strong id="kpiTotal">0</strong>
+    </article>
+    <article class="tarjeta-kpi">
+        <small>Atendidos</small>
+        <strong id="kpiAtendidos">0</strong>
+    </article>
+    <article class="tarjeta-kpi">
+        <small>Puntos críticos</small>
+        <strong id="kpiCriticos">0</strong>
+    </article>
+    <article class="tarjeta-kpi">
+        <small>Sectores monitoreados</small>
+        <strong id="kpiSectores">0</strong>
+    </article>
+</section>
 
     <!-- MODAL AUTORES -->
 <div id="modalAutores" class="modal-autores">
@@ -149,13 +169,22 @@ Crear Cuenta
         <div class="panel">
 
             <h2>📌 Reportar Residuo</h2>
-           
 
+            <p class="ayuda-reportante">Datos del reportante (opcionales)</p>
+            <label class="etiqueta-fecha" for="nombreReportante">Nombre y apellido</label>
+            <input type="text" id="nombreReportante" placeholder="Puedes dejarlo vacío" autocomplete="name">
+            <label class="etiqueta-fecha" for="correoReporte">Correo de contacto</label>
+            <input type="email" id="correoReporte" placeholder="Puedes dejarlo vacío" autocomplete="email">
+
+            <label class="etiqueta-fecha" for="tipo">Tipo de residuo</label>
             <select id="tipo">
                 <option>Orgánico</option>
                 <option>Inorgánico</option>
                 <option>Reciclable</option>
+                <option>Peligroso</option>
             </select>
+            <label class="etiqueta-fecha" for="subtipo">Clasificación</label>
+            <select id="subtipo"></select>
 
  <textarea
 id="descripcion"
@@ -189,14 +218,22 @@ multiple>
     <option>Alto</option>
 </select>
 
+<section class="panel-consulta" aria-label="Consultar reporte">
+    <h3>🔎 Consultar reporte</h3>
+    <input id="consultaReporte" type="search" placeholder="Código RM, sector o reportante">
+    <button class="boton-secundario" type="button" onclick="consultarReporte()">Buscar</button>
+</section>
+
 <section class="panel-filtros" aria-label="Filtros de reportes">
     <h3>🔎 Filtrar reportes</h3>
-    <select id="filtroTipo"><option value="">Todos los residuos</option><option>Orgánico</option><option>Inorgánico</option><option>Reciclable</option></select>
+    <select id="filtroTipo"><option value="">Todos los residuos</option><option>Orgánico</option><option>Inorgánico</option><option>Reciclable</option><option>Peligroso</option></select>
     <select id="filtroNivel"><option value="">Todos los niveles</option><option>Bajo</option><option>Medio</option><option>Alto</option></select>
     <select id="filtroEstado"><option value="">Todos los estados</option><option>Pendiente</option><option>En revisión</option><option>Atendido</option><option>Descartado</option></select>
     <input id="filtroSector" type="search" placeholder="Buscar sector o barrio">
     <label class="etiqueta-fecha" for="filtroFechaDesde">Desde</label>
     <input id="filtroFechaDesde" type="date">
+    <label class="filtro-check"><input id="filtroCriticos" type="checkbox"> Mostrar solo puntos críticos</label>
+    <label class="filtro-check"><input id="filtroMios" type="checkbox"> Ver solo mis reportes</label>
     <button class="boton-secundario" type="button" onclick="limpiarFiltros()">Limpiar filtros</button>
 </section>
 
@@ -206,79 +243,76 @@ multiple>
                 Reportar Punto
             </button>
 
-<div class="estadisticas">
+            <button class="boton-secundario" type="button" onclick="abrirPanelHerramientas()">
+                📊 Estadísticas y herramientas
+            </button>
 
-    <h3>📊 Estadísticas</h3>
-
-    <p>
-        📌 Total Reportes:
-        <span id="total">0</span>
-    </p>
-
-    <p>
-        🌱 Orgánicos:
-        <span id="organicos">0</span>
-    </p>
-
-    <p>
-        🏭 Inorgánicos:
-        <span id="inorganicos">0</span>
-    </p>
-
-    <p>
-        ♻ Reciclables:
-        <span id="reciclables">0</span>
-    </p>
-
-    <h3>🌎 Estado Ambiental</h3>
-
-<p id="estadoAmbiental">
-🟡 Nivel Ambiental Moderado
-</p>
-
-<button onclick="abrirAnalisis()">
-    📊 Ver Análisis Ambiental
-</button>
-
-
-    
-<button onclick="abrirEducacion()">
-    📚 Educación Ambiental 
-</button>
-
-
-<div class="menu-exportar">
-
-<button onclick="toggleExportar()">
-📥 Exportar Reportes ▼
-</button>
-
-<div id="submenuExportar" class="submenu-exportar">
-
-<button onclick="descargarPDF()">
-📄 Descargar PDF
-</button>
-
-<button onclick="descargarExcel()">
-📊 Descargar Excel
-</button>
-
-</div>
-
-</div>
-
-<button onclick="reiniciarSistema()">
-🗑 Reiniciar Sistema
-</button>
-
-</div>
-
-</div>
+        </div>
 
 <!-- MAPA -->
-<div id="map"></div>
+<div class="envoltorio-mapa">
+    <div class="cabecera-mapa">MAPA DE REPORTES EN TIEMPO REAL</div>
+    <div id="map"></div>
+    <div class="leyenda-mapa" aria-label="Leyenda del mapa">
+        <span><i class="punto organico"></i> Orgánico</span>
+        <span><i class="punto reciclable"></i> Reciclable</span>
+        <span><i class="punto inorganico"></i> Inorgánico</span>
+        <span><i class="punto peligroso"></i> Peligroso</span>
+        <span><i class="punto critico"></i> Punto crítico</span>
+    </div>
+</div>
 
 </div>
+
+<button id="pestanaHerramientas" class="pestana-herramientas" type="button" onclick="abrirPanelHerramientas()" aria-label="Abrir estadísticas y herramientas">
+    📊
+</button>
+
+<div id="fondoHerramientas" class="fondo-herramientas" hidden onclick="cerrarPanelHerramientas()"></div>
+
+<aside id="panelHerramientas" class="panel-herramientas" aria-label="Estadísticas y herramientas">
+    <div class="cabecera-herramientas">
+        <h2>📊 Estadísticas y herramientas</h2>
+        <button class="cerrar-herramientas" type="button" onclick="cerrarPanelHerramientas()" aria-label="Cerrar">×</button>
+    </div>
+
+    <div class="estadisticas">
+        <h3>📊 Estadísticas</h3>
+        <p>📌 Total Reportes: <span id="total">0</span></p>
+        <p>🌱 Orgánicos: <span id="organicos">0</span></p>
+        <p>🏭 Inorgánicos: <span id="inorganicos">0</span></p>
+        <p>♻ Reciclables: <span id="reciclables">0</span></p>
+        <p>⚠ Peligrosos: <span id="peligrosos">0</span></p>
+
+        <h3>🌎 Estado Ambiental</h3>
+        <p id="estadoAmbiental">🟡 Nivel Ambiental Moderado</p>
+
+        <section class="bloque-ruta-recoleccion solo-admin">
+            <h3>🚛 Ruta de recolección</h3>
+            <p>El municipio más cercano a los reportes se hace cargo. La ruta sale de ese GAD, no solo de Quevedo.</p>
+            <label class="etiqueta-fecha" for="maxParadasRuta">Paradas</label>
+            <select id="maxParadasRuta">
+                <option value="4">4 paradas</option>
+                <option value="6" selected>6 paradas</option>
+                <option value="8">8 paradas</option>
+            </select>
+            <button type="button" onclick="trazarRutaRecoleccion()">Trazar ruta de recolección</button>
+        </section>
+
+        <button onclick="abrirAnalisis()">📊 Ver Análisis Ambiental</button>
+        <button onclick="abrirEducacion()">📚 Educación Ambiental</button>
+
+        <div class="menu-exportar solo-admin">
+            <button onclick="toggleExportar()">📥 Exportar Reportes ▼</button>
+            <div id="submenuExportar" class="submenu-exportar">
+                <button onclick="descargarPDF()">📄 Descargar PDF</button>
+                <button onclick="descargarExcel()">📊 Descargar Excel</button>
+            </div>
+        </div>
+
+        <button class="solo-admin" onclick="reiniciarSistema()">🗑 Reiniciar Sistema</button>
+    </div>
+</aside>
 
 <!-- PANEL DE ANALISIS -->
 <!-- PANEL ANALISIS -->
@@ -513,16 +547,32 @@ Aprende conceptos importantes sobre residuos y cuidado ambiental 🌎
     <!-- TABLA -->
     <div class="tabla-contenedor">
 
-     <h2 class="titulo-tabla">
-🗑️ Listado de Reportes Ambientales
+     <h2 id="tituloListadoReportes" class="titulo-tabla">
+📋 Reportes activos
 </h2>
+
+        <div class="apartados-reportes" role="tablist" aria-label="Apartados de reportes">
+            <button class="tab-reporte activo" type="button" role="tab" aria-selected="true" data-apartado="activos" onclick="cambiarApartadoReportes('activos')">
+                📋 Activos <span id="contadorActivos">0</span>
+            </button>
+            <button class="tab-reporte" type="button" role="tab" aria-selected="false" data-apartado="atendidos" onclick="cambiarApartadoReportes('atendidos')">
+                ✅ Atendidos <span id="contadorAtendidos">0</span>
+            </button>
+            <button class="tab-reporte" type="button" role="tab" aria-selected="false" data-apartado="descartados" onclick="cambiarApartadoReportes('descartados')">
+                🚫 Descartados <span id="contadorDescartados">0</span>
+            </button>
+        </div>
+
+        <p id="descripcionApartado" class="descripcion-apartado">
+            Reportes pendientes o que se encuentran en revisión.
+        </p>
 
 
         <table>
 
            <thead>
     <tr>
-        <th>Correo</th>
+        <th>Reportante</th>
         <th>Tipo</th>
         <th>Descripción</th>
         <th>Sector</th>
@@ -543,12 +593,17 @@ Aprende conceptos importantes sobre residuos y cuidado ambiental 🌎
 
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <!-- El cargador nunca debe bloquear la interfaz si falla un servicio externo. -->
+    <script>
+        window.setTimeout(() => {
+            const loader = document.getElementById("loader");
+            if (loader) loader.style.display = "none";
+        }, 3500);
+    </script>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="gad-ecuador.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <script type="module">
 
@@ -566,14 +621,13 @@ function mostrarToast(mensaje){
     },3000);
 }
 
-import { initializeApp }
+import { initializeApp, getApp, getApps }
 from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
 
 import {
 getAuth,
-createUserWithEmailAndPassword,
 signInWithEmailAndPassword,
-sendPasswordResetEmail,
+signInAnonymously,
 onAuthStateChanged,
 signOut
 }
@@ -584,7 +638,10 @@ getFirestore,
 collection,
 addDoc,
 getDocs,
-updateDoc
+onSnapshot,
+updateDoc,
+deleteDoc,
+doc
 }
 from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 
@@ -610,45 +667,172 @@ measurementId: "G-7K7NYG6TKT"
 // Inicializar
 
 
-const app = initializeApp(firebaseConfig);
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
 const db = getFirestore(app);
 
 const auth = getAuth(app);
 
-// El acceso se registra antes de inicializar el mapa u otros componentes.
-// Así un fallo visual no bloquea el inicio de sesión.
-window.iniciarSesion = async function() {
-    const correo = document.getElementById("correo").value.trim();
-    const password = document.getElementById("password").value;
-    if (!correo || !password) return alert("Ingresa tu correo y contraseña.");
+// Las herramientas pesadas de exportación se descargan únicamente cuando
+// un administrador realmente solicita un archivo.
+const libreriasDinamicas = new Map();
+
+function cargarScriptUnaVez(url, estaDisponible) {
+    if (estaDisponible()) return Promise.resolve();
+    if (libreriasDinamicas.has(url)) return libreriasDinamicas.get(url);
+
+    const carga = new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = url;
+        script.async = true;
+        script.onload = () => estaDisponible()
+            ? resolve()
+            : reject(new Error("La herramienta no quedó disponible."));
+        script.onerror = () => reject(new Error("No se pudo descargar la herramienta."));
+        document.head.appendChild(script);
+    });
+
+    libreriasDinamicas.set(url, carga);
+    return carga;
+}
+
+async function asegurarLibreriasPDF() {
+    await cargarScriptUnaVez(
+        "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js",
+        () => Boolean(window.jspdf?.jsPDF)
+    );
+    await cargarScriptUnaVez(
+        "https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js",
+        () => Boolean(window.jspdf?.jsPDF?.API?.autoTable)
+    );
+}
+
+async function asegurarLibreriaExcel() {
+    await cargarScriptUnaVez(
+        "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js",
+        () => Boolean(window.XLSX)
+    );
+}
+
+// Cuentas con permisos para moderar todos los reportes.
+// Debe coincidir con la lista configurada en firestore.rules.
+const CORREOS_ADMINISTRADORES = [
+    "smaciasc4@uteq.edu.ec",
+    "sistemamonitoreo25@gmail.com"
+];
+
+function esAdministrador(usuario = auth.currentUser) {
+    const correo = usuario?.email?.trim().toLowerCase();
+    return Boolean(correo && CORREOS_ADMINISTRADORES.includes(correo));
+}
+
+function esAutorReporte(reporte, usuario = auth.currentUser) {
+    if (!reporte || !usuario) return false;
+    if (reporte.uidAutor) return reporte.uidAutor === usuario.uid;
+    return Boolean(usuario.email && reporte.correo === usuario.email);
+}
+
+function aplicarPermisosRuta(usuario = auth.currentUser) {
+    const esAdmin = esAdministrador(usuario);
+    document.body.classList.toggle("es-admin", esAdmin);
+    document.body.classList.toggle("es-ciudadano", Boolean(usuario) && !esAdmin);
+    if (!esAdmin && typeof limpiarRuta === "function") limpiarRuta();
     try {
-        await signInWithEmailAndPassword(auth, correo, password);
-        mostrarToast("Sesión iniciada");
-        document.getElementById("modalLogin").style.display = "none";
+        if (reportesActuales && reportesActuales.length) aplicarFiltros();
+    } catch (error) {
+        /* El listado de reportes puede no estar listo todavía. */
+    }
+}
+
+function exigirAdministradorRutas() {
+    if (esAdministrador()) return true;
+    alert("Las rutas de recolección solo las usa el administrador. Como ciudadano puedes reportar el problema.");
+    return false;
+}
+
+function htmlBotonRuta(lat, lon, texto = "Cómo llegar") {
+    if (!esAdministrador()) return "";
+    return `<button class="btn-popup btn-ruta" type="button" onclick="trazarRutaHasta(${Number(lat)}, ${Number(lon)})">${texto}</button>`;
+}
+
+function escribirMensajeAcceso(mensaje = "", esError = false) {
+    const elemento = document.getElementById("mensajeAccesoAdmin");
+    if (!elemento) return;
+    elemento.textContent = mensaje;
+    elemento.classList.toggle("error", esError);
+}
+
+window.abrirAccesoAdministrador = function() {
+    const modal = document.getElementById("modalLogin");
+    escribirMensajeAcceso();
+    modal.hidden = false;
+    modal.setAttribute("aria-hidden", "false");
+    requestAnimationFrame(() => modal.classList.add("show"));
+    document.getElementById("correo")?.focus();
+};
+
+window.cerrarAccesoAdministrador = function(evento) {
+    const modal = document.getElementById("modalLogin");
+    if (evento && evento.target !== modal) return;
+    modal.classList.remove("show");
+    modal.hidden = true;
+    modal.setAttribute("aria-hidden", "true");
+    escribirMensajeAcceso();
+};
+
+window.iniciarSesion = async function() {
+    const correo = document.getElementById("correo").value.trim().toLowerCase();
+    const password = document.getElementById("password").value;
+    const boton = document.getElementById("btnIngresarAdmin");
+    if (!correo || !password) {
+        escribirMensajeAcceso("Ingresa el correo y la contraseña.", true);
+        return;
+    }
+    if (!CORREOS_ADMINISTRADORES.includes(correo)) {
+        escribirMensajeAcceso("Esta cuenta no tiene permisos de administrador.", true);
+        return;
+    }
+    try {
+        boton.disabled = true;
+        boton.textContent = "Ingresando...";
+        escribirMensajeAcceso("Verificando credenciales...");
+        const credencial = await signInWithEmailAndPassword(auth, correo, password);
+        if (!esAdministrador(credencial.user)) {
+            await signOut(auth);
+            throw new Error("Cuenta sin autorización administrativa.");
+        }
+        document.getElementById("password").value = "";
+        window.cerrarAccesoAdministrador();
+        mostrarToast("Acceso de administrador iniciado");
     } catch (error) {
         const mensajes = {
             "auth/invalid-credential": "El correo o la contraseña no coinciden.",
             "auth/wrong-password": "La contraseña no es correcta.",
             "auth/user-not-found": "No existe una cuenta con este correo.",
-            "auth/too-many-requests": "Demasiados intentos. Espera unos minutos o usa la recuperación de contraseña.",
+            "auth/too-many-requests": "Demasiados intentos. Espera unos minutos.",
             "auth/network-request-failed": "No hay conexión con Firebase. Verifica tu internet."
         };
-        alert(mensajes[error.code] || `No se pudo iniciar sesión (${error.code || "error desconocido"}).`);
+        escribirMensajeAcceso(mensajes[error.code] || error.message || "No se pudo iniciar sesión.", true);
+    } finally {
+        boton.disabled = false;
+        boton.textContent = "Ingresar";
     }
 };
 
-window.recuperarContrasena = async function() {
-    const correo = document.getElementById("correo").value.trim();
-    if (!correo) return alert("Escribe primero el correo de tu cuenta.");
+let iniciandoSesionPublica = false;
+async function asegurarSesionPublica() {
+    if (auth.currentUser || iniciandoSesionPublica) return auth.currentUser;
+    iniciandoSesionPublica = true;
     try {
-        auth.languageCode = "es";
-        await sendPasswordResetEmail(auth, correo);
-        alert("Correo de recuperación enviado. Revisa Spam y Promociones.");
+        const credencial = await signInAnonymously(auth);
+        return credencial.user;
     } catch (error) {
-        alert(`No se pudo enviar la recuperación (${error.code || "error desconocido"}).`);
+        console.error("No se pudo iniciar la sesión pública anónima:", error);
+        return null;
+    } finally {
+        iniciandoSesionPublica = false;
     }
-};
+}
 
 // SUPABASE STORAGE: copia la clave Publishable/anon desde Supabase > Connect.
 // Nunca uses aquí la clave service_role.
@@ -664,7 +848,7 @@ async function obtenerClienteSupabase() {
 }
 const BUCKET_FOTOS = "fotos-reportes";
 
-async function subirImagenesASupabase(imagenes) {
+async function subirImagenesASupabaseBasico(imagenes) {
     if (SUPABASE_PUBLISHABLE_KEY.includes("PEGA_AQUI")) {
         throw new Error("Falta configurar la clave Publishable de Supabase en index.html.");
     }
@@ -688,42 +872,44 @@ async function subirImagenesASupabase(imagenes) {
 
 
 
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
+    const admin = esAdministrador(user);
+    const perfil = document.getElementById("perfilUsuario");
+    const nombre = document.getElementById("nombreUsuario");
+    const rol = document.getElementById("rolUsuario");
+    const botonAcceso = document.getElementById("btnAccesoAdministrador");
+    const botonSalir = document.getElementById("btnCerrarSesion");
 
-    console.log("onAuthStateChanged:", user);
-
-    const login = document.querySelector('.modal-login');
-
-    if(user){
-
-        console.log("Usuario logueado");
-
-        login.classList.add("hide");
-
-        setTimeout(() => {
-            login.style.display = "none";
-            login.classList.remove("hide");
-        }, 250);
-
-        document.body.classList.remove("login-activo");
-
-    }else{
-
-        console.log("No hay usuario");
-
-        login.style.display = "flex";
-
-        setTimeout(() => {
-            login.classList.add("show");
-        }, 10);
-
-        document.body.classList.add("login-activo");
+    if (admin) {
+        window.cerrarAccesoAdministrador();
+        nombre.textContent = user.email;
+        rol.textContent = "Administrador";
+        perfil.hidden = false;
+        botonAcceso.hidden = true;
+        botonSalir.hidden = false;
+        const correoReporte = document.getElementById("correoReporte");
+        if (correoReporte && !correoReporte.value) correoReporte.value = user.email;
+    } else {
+        perfil.hidden = true;
+        botonAcceso.hidden = false;
+        botonSalir.hidden = true;
     }
 
+    document.body.classList.remove("login-activo");
+    aplicarPermisosRuta(user);
+
+    if (!user) await asegurarSesionPublica();
+});
+
+document.getElementById("password")?.addEventListener("keydown", evento => {
+    if (evento.key === "Enter") {
+        evento.preventDefault();
+        window.iniciarSesion();
+    }
 });
 
 
-async function actualizarPorcentajesAnalisis(){
+async function actualizarPorcentajesAnalisisBasico(){
 
 const querySnapshot = await getDocs(collection(db, "reportes"));
 
@@ -756,7 +942,7 @@ document.getElementById("cardCriticos").innerText = inorganicos;
 
 }
 
-async function actualizarEstadisticas(){
+async function actualizarEstadisticasBasicas(){
 
 const querySnapshot =
 await getDocs(collection(db, "reportes"));
@@ -970,7 +1156,7 @@ const limitesEcuadorGalapagos = L.latLngBounds(
 var map = L.map('map', {
     zoomControl: false,
     minZoom: 4,
-    maxZoom: 19,
+    maxZoom: 20,
     maxBounds: limitesEcuadorGalapagos.pad(0.12),
     maxBoundsViscosity: 0.9,
     worldCopyJump: false
@@ -980,21 +1166,18 @@ map.fitBounds(limitesEcuadorGalapagos, { padding: [18, 18], maxZoom: 5 });
 L.control.zoom({ position: 'bottomright' }).addTo(map);
 
 let capaMunicipios = L.layerGroup().addTo(map);
-let capaReportes = typeof L.markerClusterGroup === "function"
-    ? L.markerClusterGroup({
-        showCoverageOnHover: false,
-        spiderfyOnMaxZoom: true,
-        maxClusterRadius: 45
-    })
-    : L.layerGroup();
-capaReportes.addTo(map);
+let capaReportes = L.layerGroup().addTo(map);
+let capaRutas = L.layerGroup().addTo(map);
 
-// OpenStreetMap
+// Mapa actualizado (CARTO Voyager): calles más claras para seguir rutas.
+// La clave de basemaps es pública para el navegador y autoriza este dominio en CARTO.
+const CLAVE_MAPA_CARTO = 'cb1_2efv_1_740cdcdbf09fb15fad9d3176';
 L.tileLayer(
-'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+`https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key=${encodeURIComponent(CLAVE_MAPA_CARTO)}`,
 {
-attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors',
-maxZoom: 19
+attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>',
+subdomains: 'abcd',
+maxZoom: 20
 }).addTo(map);
 
 const controlEcuador = L.control({ position: 'topright' });
@@ -1011,11 +1194,52 @@ controlEcuador.onAdd = function() {
 };
 controlEcuador.addTo(map);
 
+const controlInfoRuta = L.control({ position: 'topleft' });
+controlInfoRuta.onAdd = function() {
+    const caja = L.DomUtil.create('div', 'info-ruta');
+    caja.id = 'infoRuta';
+    caja.hidden = true;
+    L.DomEvent.disableClickPropagation(caja);
+    return caja;
+};
+controlInfoRuta.addTo(map);
+
+let marcadorYo = null;
+const controlUbicacion = L.control({ position: 'bottomright' });
+controlUbicacion.onAdd = function() {
+    const boton = L.DomUtil.create('button', 'control-ubicacion');
+    boton.type = 'button';
+    boton.title = 'Centrar en mi ubicación';
+    boton.innerHTML = '📍';
+    L.DomEvent.disableClickPropagation(boton);
+    L.DomEvent.on(boton, 'click', () => window.centrarMiUbicacion());
+    return boton;
+};
+controlUbicacion.addTo(map);
+
+window.centrarMiUbicacion = function() {
+    navigator.geolocation.getCurrentPosition(function(pos) {
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+        map.setView([lat, lon], 16);
+        if (marcadorYo) map.removeLayer(marcadorYo);
+        marcadorYo = L.circleMarker([lat, lon], {
+            radius: 8,
+            fillColor: "#38bdf8",
+            color: "#fff",
+            weight: 2,
+            fillOpacity: 1
+        }).bindPopup("Estás aquí").addTo(map);
+    }, function(error) {
+        alert("Activa la ubicación para centrar el mapa: " + error.message);
+    }, { enableHighAccuracy: true, timeout: 15000 });
+};
+
 // Contador
 
 
 // Cargar reportes
-async function cargarReportes(){
+async function cargarReportesBasicos(){
 
 // LIMPIAR TABLA
 document.getElementById("tablaReportes").innerHTML = "";
@@ -1088,97 +1312,31 @@ await actualizarEstadisticas();
 
 window.addEventListener("load", async function(){
 
-    await cargarReportes();
-    await actualizarEstadisticas();
-
-    document.getElementById("loader").style.display = "none";
-
-    setInterval(async () => {
-
+    try {
         await cargarReportes();
-        await actualizarEstadisticas();
+        iniciarEscuchaReportes();
+    } catch (error) {
+        console.error("No se pudo cargar toda la información inicial:", error);
+        mostrarToast("El sistema abrió, pero no se pudieron cargar algunos reportes.");
+    } finally {
+        document.getElementById("loader").style.display = "none";
+        setTimeout(() => map.invalidateSize(), 200);
+    }
 
-    }, 15000);
+    function ajustarTamanoMapa(){
+        if (map) map.invalidateSize();
+    }
+    window.addEventListener("resize", ajustarTamanoMapa);
+    window.addEventListener("orientationchange", function(){
+        setTimeout(ajustarTamanoMapa, 350);
+    });
 
 });
 
 
-// FUNCIÓN
-
-window.registrarse = async function(){
-
-let correo =
-document.getElementById("correo").value;
-
-let password =
-document.getElementById("password").value;
-
-try{
-
-await createUserWithEmailAndPassword(
-auth,
-correo,
-password
-);
-
-mostrarToast("Usuario registrado");
-
-}catch(error){
-
-alert(error.message);
-
-}
-
-}
-
-window.iniciarSesion = async function(){
-
-let correo =
-document.getElementById("correo").value.trim();
-
-let password =
-document.getElementById("password").value;
-
-try{
-
-await signInWithEmailAndPassword(
-auth,
-correo,
-password
-);
-
-mostrarToast("Sesión iniciada");
-
-document.getElementById("modalLogin").style.display = "none";
-
-}catch(error){
-
-const mensajes = {
-    "auth/invalid-credential": "El correo o la contraseña no coinciden.",
-    "auth/wrong-password": "La contraseña no es correcta.",
-    "auth/user-not-found": "No existe una cuenta con este correo.",
-    "auth/too-many-requests": "Demasiados intentos. Espera unos minutos o restablece la contraseña.",
-    "auth/network-request-failed": "No hay conexión con Firebase. Verifica tu internet e inténtalo de nuevo."
-};
-alert(mensajes[error.code] || "No se pudo iniciar sesión: " + error.message);
-
-}
-
-}
-
 window.cerrarSesion = async function () {
-
     await signOut(auth);
-
-    document.body.classList.add("login-activo");
-
-    const login = document.getElementById("modalLogin");
-    login.style.display = "flex";
-    login.classList.remove("hide");
-    login.classList.add("show");
-
-    location.reload();
-
+    mostrarToast("Sesión de administrador cerrada");
 }
 window.obtenerUbicacion = async function(){
 
@@ -1310,29 +1468,59 @@ alert("No se pudo obtener ubicación: " + error.message);
 }
 
 
-import { deleteDoc, doc } from
-"https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
-
 window.eliminarRegistro = async function(id){
+    if(!auth.currentUser){
+        alert("No se pudo identificar esta sesión. Actualiza la página e inténtalo nuevamente.");
+        return;
+    }
 
-if(!auth.currentUser){
+    const reporte = reportesActuales.find(item => item.id === id);
+    const puedeEliminar = reporte && (esAutorReporte(reporte) || esAdministrador());
+    if(!puedeEliminar){
+        alert("Solo el autor o un administrador puede eliminar este reporte.");
+        return;
+    }
 
-alert("Debe iniciar sesión");
+    const confirmar = confirm("¿Seguro que deseas eliminar este reporte? Esta acción no se puede deshacer.");
+    if(!confirmar) return;
 
-return;
-
+    try{
+        await deleteDoc(doc(db, "reportes", id));
+        mostrarToast("Reporte eliminado correctamente");
+        await cargarReportes();
+    }catch(error){
+        alert("No se pudo eliminar el reporte: " + error.message);
+    }
 }
 
-await deleteDoc(doc(db, "reportes", id));
 
-alert("Registro eliminado");
+window.abrirPanelHerramientas = function() {
+    const panel = document.getElementById("panelHerramientas");
+    const fondo = document.getElementById("fondoHerramientas");
+    if (!panel || !fondo) return;
+    panel.classList.add("abierto");
+    fondo.hidden = false;
+};
 
-location.reload();
+window.cerrarPanelHerramientas = function() {
+    const panel = document.getElementById("panelHerramientas");
+    const fondo = document.getElementById("fondoHerramientas");
+    const menu = document.getElementById("submenuExportar");
+    if (panel) panel.classList.remove("abierto");
+    if (fondo) fondo.hidden = true;
+    if (menu) menu.style.display = "none";
+};
 
-}
-
+document.addEventListener("keydown", function(evento) {
+    if (evento.key === "Escape") window.cerrarPanelHerramientas();
+    if (evento.key === "Escape" && !document.getElementById("modalLogin")?.hidden) {
+        window.cerrarAccesoAdministrador();
+    }
+});
 
 window.abrirEducacion = function(){
+
+window.cerrarPanelHerramientas();
 
 const panel =
 document.getElementById("panelEducacion");
@@ -1351,6 +1539,7 @@ if(panel.style.display === "block"){
 
 
 window.abrirAnalisis = function(){
+    window.cerrarPanelHerramientas();
     actualizarPorcentajesAnalisis();
 
 const panel =
@@ -1493,6 +1682,7 @@ borderWidth: 1
 options: {
 
 responsive: true,
+animation: false,
 
 plugins: {
 
@@ -1611,25 +1801,34 @@ tabla.innerHTML += fila;
 // GESTIÓN, FILTROS Y SEGUIMIENTO DE REPORTES
 // ===========================
 let reportesActuales = [];
+let firmaUltimosReportes = "";
+let cancelarEscuchaReportes = null;
 let resolverConfirmacion = null;
+let apartadoReportesActual = "activos";
+
+const configuracionApartados = {
+    activos: {
+        titulo: "📋 Reportes activos",
+        descripcion: "Reportes pendientes o que se encuentran en revisión.",
+        estados: ["Pendiente", "En revisión"],
+        vacio: "No hay reportes activos en este momento."
+    },
+    atendidos: {
+        titulo: "✅ Reportes atendidos",
+        descripcion: "Reportes que ya fueron solucionados o atendidos.",
+        estados: ["Atendido"],
+        vacio: "Todavía no hay reportes atendidos."
+    },
+    descartados: {
+        titulo: "🚫 Reportes descartados",
+        descripcion: "Reportes inválidos, duplicados o que no requieren atención.",
+        estados: ["Descartado"],
+        vacio: "No hay reportes descartados."
+    }
+};
 
 function escaparHTML(valor = "") {
     return String(valor).replace(/[&<>'"]/g, caracter => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[caracter]));
-}
-
-window.recuperarContrasena = async function(){
-    const correo = document.getElementById("correo").value.trim();
-    if(!correo){
-        alert("Escribe el correo de la cuenta administradora primero.");
-        return;
-    }
-    try{
-        auth.languageCode = "es";
-        await sendPasswordResetEmail(auth, correo);
-        alert("Te enviamos un correo para restablecer tu contraseña. Revisa también Spam o Promociones.");
-    }catch(error){
-        alert("No se pudo enviar el correo de recuperación: " + error.message);
-    }
 }
 
 function fechaReporte(reporte) {
@@ -1644,9 +1843,43 @@ function prioridadReporte(reporte, todos = reportesActuales) {
     return "Baja";
 }
 
+function codigoReporte(reporte) {
+    const anio = fechaReporte(reporte).getFullYear();
+    const sufijo = String(reporte.id || "").replace(/[^a-zA-Z0-9]/g, "").slice(-5).toUpperCase().padStart(5, "0");
+    return `RM-${anio}-${sufijo}`;
+}
+
 function colorReporte(reporte) {
     if (reporte.estado === "Atendido" || reporte.estado === "Descartado") return "#64748b";
-    return reporte.nivel === "Alto" ? "#ef4444" : reporte.nivel === "Medio" ? "#f59e0b" : "#22c55e";
+    if (prioridadReporte(reporte) === "Crítica") return "#ef4444";
+    if (reporte.tipo === "Peligroso") return "#a855f7";
+    if (reporte.tipo === "Reciclable") return "#3b82f6";
+    if (reporte.tipo === "Inorgánico") return "#f97316";
+    return "#22c55e";
+}
+
+function crearMarcadorReporte(reporte) {
+    const color = colorReporte(reporte);
+    const prioridad = prioridadReporte(reporte);
+    const esCritico = prioridad === "Crítica" && reporte.estado !== "Atendido" && reporte.estado !== "Descartado";
+    if (esCritico) {
+        return L.marker([reporte.lat, reporte.lon], {
+            icon: L.divIcon({
+                className: "marcador-critico",
+                html: `<span style="color:${color}">▲</span>`,
+                iconSize: [22, 22],
+                iconAnchor: [11, 18],
+                popupAnchor: [0, -16]
+            })
+        });
+    }
+    return L.circleMarker([reporte.lat, reporte.lon], {
+        radius: prioridad === "Alta" ? 12 : 10,
+        fillColor: color,
+        color: "#fff",
+        weight: 2,
+        fillOpacity: 0.9
+    });
 }
 
 function obtenerFiltros() {
@@ -1655,35 +1888,86 @@ function obtenerFiltros() {
         nivel: document.getElementById("filtroNivel").value,
         estado: document.getElementById("filtroEstado").value,
         sector: document.getElementById("filtroSector").value.trim().toLowerCase(),
-        fecha: document.getElementById("filtroFechaDesde").value
+        fecha: document.getElementById("filtroFechaDesde").value,
+        criticos: document.getElementById("filtroCriticos").checked,
+        mios: document.getElementById("filtroMios").checked
     };
 }
 
 function aplicarFiltros() {
     const filtros = obtenerFiltros();
+    const apartado = configuracionApartados[apartadoReportesActual];
     const visibles = reportesActuales.filter(reporte =>
+        apartado.estados.includes(reporte.estado) &&
         (!filtros.tipo || reporte.tipo === filtros.tipo) &&
         (!filtros.nivel || reporte.nivel === filtros.nivel) &&
         (!filtros.estado || reporte.estado === filtros.estado) &&
         (!filtros.sector || (reporte.sector || "").toLowerCase().includes(filtros.sector)) &&
-        (!filtros.fecha || fechaReporte(reporte) >= new Date(`${filtros.fecha}T00:00:00`))
+        (!filtros.fecha || fechaReporte(reporte) >= new Date(`${filtros.fecha}T00:00:00`)) &&
+        (!filtros.criticos || prioridadReporte(reporte) === "Crítica") &&
+        (!filtros.mios || esAutorReporte(reporte))
     );
     renderizarReportes(visibles);
 }
 
 window.limpiarFiltros = function() {
     ["filtroTipo", "filtroNivel", "filtroEstado", "filtroSector", "filtroFechaDesde"].forEach(id => document.getElementById(id).value = "");
+    document.getElementById("filtroCriticos").checked = false;
+    document.getElementById("filtroMios").checked = false;
     aplicarFiltros();
 };
+
+window.consultarReporte = function() {
+    const consulta = document.getElementById("consultaReporte").value.trim().toLowerCase();
+    if (!consulta) return alert("Escribe un código, sector o correo.");
+    const encontrado = reportesActuales.find(reporte =>
+        codigoReporte(reporte).toLowerCase().includes(consulta) ||
+        String(reporte.id).toLowerCase().includes(consulta) ||
+        (reporte.sector || "").toLowerCase().includes(consulta) ||
+        (reporte.correo || "").toLowerCase().includes(consulta)
+    );
+    if (!encontrado) return alert("No se encontró ese reporte.");
+    map.setView([encontrado.lat, encontrado.lon], 16);
+    verDetalleReporte(encontrado.id);
+};
+
+window.cambiarApartadoReportes = function(apartado) {
+    if(!configuracionApartados[apartado]) return;
+    apartadoReportesActual = apartado;
+    const configuracion = configuracionApartados[apartado];
+
+    document.getElementById("tituloListadoReportes").textContent = configuracion.titulo;
+    document.getElementById("descripcionApartado").textContent = configuracion.descripcion;
+    document.querySelectorAll(".tab-reporte").forEach(boton => {
+        const seleccionado = boton.dataset.apartado === apartado;
+        boton.classList.toggle("activo", seleccionado);
+        boton.setAttribute("aria-selected", String(seleccionado));
+    });
+
+    aplicarFiltros();
+};
+
+function actualizarContadoresApartados() {
+    document.getElementById("contadorActivos").textContent = reportesActuales.filter(reporte => ["Pendiente", "En revisión"].includes(reporte.estado)).length;
+    document.getElementById("contadorAtendidos").textContent = reportesActuales.filter(reporte => reporte.estado === "Atendido").length;
+    document.getElementById("contadorDescartados").textContent = reportesActuales.filter(reporte => reporte.estado === "Descartado").length;
+}
 
 function renderizarReportes(reportes) {
     const tabla = document.getElementById("tablaReportes");
     tabla.innerHTML = "";
     capaReportes.clearLayers();
 
+    if(!reportes.length){
+        tabla.innerHTML = `<tr><td class="tabla-vacia" colspan="10">${configuracionApartados[apartadoReportesActual].vacio}</td></tr>`;
+        return;
+    }
+
     reportes.forEach(reporte => {
         const prioridad = prioridadReporte(reporte);
-        const puedeGestionar = auth.currentUser?.email === reporte.correo;
+        const esAutor = esAutorReporte(reporte);
+        const usuarioEsAdministrador = esAdministrador(auth.currentUser);
+        const puedeEliminar = esAutor || usuarioEsAdministrador;
         const fotos = Array.isArray(reporte.fotos) ? reporte.fotos : [];
         const fila = document.createElement("tr");
         fila.innerHTML = `
@@ -1694,21 +1978,49 @@ function renderizarReportes(reportes) {
             <td><span class="prioridad prioridad-${prioridad.toLowerCase()}">${prioridad}</span></td>
             <td>${fotos.length ? `${fotos.length} foto${fotos.length > 1 ? "s" : ""}` : "Sin fotos"}</td>
             <td>${Number(reporte.lat).toFixed(4)}, ${Number(reporte.lon).toFixed(4)}</td>
-            <td><button class="btn-detalle" type="button" onclick="verDetalleReporte('${reporte.id}')">Ver detalle</button>
-            ${puedeGestionar ? `<select class="selector-estado" onchange="actualizarEstadoReporte('${reporte.id}', this.value)">${["Pendiente","En revisión","Atendido","Descartado"].map(estado => `<option ${estado === reporte.estado ? "selected" : ""}>${estado}</option>`).join("")}</select>` : "🔒"}</td>`;
+            <td><div class="acciones-reporte"><button class="btn-detalle" type="button" onclick="verDetalleReporte('${reporte.id}')">Ver detalle</button>
+            ${usuarioEsAdministrador ? `<select class="selector-estado" aria-label="Cambiar estado del reporte" onchange="actualizarEstadoReporte('${reporte.id}', this.value)">${["Pendiente","En revisión","Atendido","Descartado"].map(estado => `<option ${estado === reporte.estado ? "selected" : ""}>${estado}</option>`).join("")}</select>` : ""}${puedeEliminar ? `<button class="btn-eliminar" type="button" onclick="eliminarRegistro('${reporte.id}')">🗑 Eliminar</button>` : `<span class="reporte-bloqueado" title="Solo el autor o un administrador puede eliminar este reporte">🔒</span>`}${usuarioEsAdministrador && !esAutor ? `<span class="insignia-admin">Administrador</span>` : ""}</div></td>`;
         tabla.appendChild(fila);
 
-        const marcador = L.circleMarker([reporte.lat, reporte.lon], { radius: prioridad === "Crítica" ? 13 : 10, fillColor: colorReporte(reporte), color: "#fff", weight: 2, fillOpacity: .9 });
-        marcador.bindPopup(`<b>${escaparHTML(reporte.tipo)}</b><br>⚠ ${escaparHTML(reporte.nivel)} · ${escaparHTML(reporte.estado)}<br>🏘 ${escaparHTML(reporte.sector)}<br><button class="btn-popup" onclick="verDetalleReporte('${reporte.id}')">Ver detalle</button>`);
+        const marcador = crearMarcadorReporte(reporte);
+        const fechaTexto = fechaReporte(reporte).toLocaleString("es-EC", { dateStyle: "short", timeStyle: "short" });
+        marcador.bindPopup(`<b>${escaparHTML(codigoReporte(reporte))}</b><br>${escaparHTML(reporte.tipo)}${reporte.subtipo ? ` · ${escaparHTML(reporte.subtipo)}` : ""} · ${escaparHTML(reporte.nivel)}<br>🏘 ${escaparHTML(reporte.sector)}<br>🕒 ${fechaTexto}<br>👤 ${escaparHTML(reporte.correo)}<br>📌 ${escaparHTML(reporte.estado)}<br><button class="btn-popup" type="button" onclick="verDetalleReporte('${reporte.id}')">Ver detalle</button>${htmlBotonRuta(reporte.lat, reporte.lon)}`);
         capaReportes.addLayer(marcador);
     });
 }
 
-async function cargarReportes() {
-    const snapshot = await getDocs(collection(db, "reportes"));
+function aplicarSnapshotReportes(snapshot) {
+    const firmaNueva = snapshot.docs
+        .map(documento => `${documento.id}:${JSON.stringify(documento.data())}`)
+        .sort()
+        .join("|");
+
+    // Firestore puede confirmar varias veces la misma información. Si nada
+    // cambió, conservamos la tabla, los marcadores y los gráficos existentes.
+    if (firmaNueva === firmaUltimosReportes) return false;
+    firmaUltimosReportes = firmaNueva;
     reportesActuales = snapshot.docs.map(documento => ({ id: documento.id, estado: "Pendiente", ...documento.data() }));
+    actualizarContadoresApartados();
     aplicarFiltros();
     actualizarEstadisticas();
+    return true;
+}
+
+async function cargarReportes() {
+    const snapshot = await getDocs(collection(db, "reportes"));
+    return aplicarSnapshotReportes(snapshot);
+}
+
+function iniciarEscuchaReportes() {
+    if (cancelarEscuchaReportes) return;
+    cancelarEscuchaReportes = onSnapshot(
+        collection(db, "reportes"),
+        aplicarSnapshotReportes,
+        error => {
+            console.warn("La actualización en tiempo real se interrumpió:", error);
+            mostrarToast("La información se actualizará al realizar la próxima acción.");
+        }
+    );
 }
 
 function actualizarEstadisticas() {
@@ -1718,10 +2030,13 @@ function actualizarEstadisticas() {
     const organicos = reportesActuales.filter(r => r.tipo === "Orgánico").length;
     const inorganicos = reportesActuales.filter(r => r.tipo === "Inorgánico").length;
     const reciclables = reportesActuales.filter(r => r.tipo === "Reciclable").length;
+    const peligrosos = reportesActuales.filter(r => r.tipo === "Peligroso").length;
     document.getElementById("total").textContent = total;
     document.getElementById("organicos").textContent = organicos;
     document.getElementById("inorganicos").textContent = inorganicos;
     document.getElementById("reciclables").textContent = reciclables;
+    const kpiPeligrosos = document.getElementById("peligrosos");
+    if (kpiPeligrosos) kpiPeligrosos.textContent = peligrosos;
     document.getElementById("cardTotal").textContent = total;
     document.getElementById("cardCriticos").textContent = reportesActuales.filter(r => prioridadReporte(r) === "Crítica").length;
     document.getElementById("cardSemana").textContent = reportesActuales.filter(r => fechaReporte(r) >= semana).length;
@@ -1733,60 +2048,128 @@ function actualizarEstadisticas() {
     document.getElementById("inoTotal").textContent = total ? `${Math.round(inorganicos * 100 / total)}%` : "0%";
     document.getElementById("recTotal").textContent = total ? `${Math.round(reciclables * 100 / total)}%` : "0%";
     document.getElementById("ecoScore").textContent = Math.max(0, 100 - pendientes * 4 - reportesActuales.filter(r => r.nivel === "Alto").length * 6);
+    const kpiTotal = document.getElementById("kpiTotal");
+    const kpiAtendidos = document.getElementById("kpiAtendidos");
+    const kpiCriticos = document.getElementById("kpiCriticos");
+    const kpiSectores = document.getElementById("kpiSectores");
+    if (kpiTotal) kpiTotal.textContent = total;
+    if (kpiAtendidos) kpiAtendidos.textContent = reportesActuales.filter(r => r.estado === "Atendido").length;
+    if (kpiCriticos) kpiCriticos.textContent = reportesActuales.filter(r => prioridadReporte(r) === "Crítica").length;
+    if (kpiSectores) kpiSectores.textContent = new Set(reportesActuales.map(r => (r.sector || "").trim().toLowerCase()).filter(Boolean)).size;
     actualizarGraficos(organicos, inorganicos, reciclables);
 }
 
 function actualizarGraficos(organicos, inorganicos, reciclables) {
+    const panelAnalisis = document.getElementById("panelAnalisis");
+    if (!panelAnalisis || panelAnalisis.style.display !== "block") return;
+
     if (window.miGrafico) window.miGrafico.destroy();
-    window.miGrafico = new Chart(document.getElementById("graficoResiduos"), { type: "doughnut", data: { labels: ["Orgánicos", "Inorgánicos", "Reciclables"], datasets: [{ data: [organicos, inorganicos, reciclables], backgroundColor: ["#22c55e", "#ef4444", "#38bdf8"] }] }, options: { responsive: true, plugins: { title: { display: true, text: "Distribución de residuos", color: "white" }, legend: { labels: { color: "white" } } } } });
+    window.miGrafico = new Chart(document.getElementById("graficoResiduos"), { type: "doughnut", data: { labels: ["Orgánicos", "Inorgánicos", "Reciclables"], datasets: [{ data: [organicos, inorganicos, reciclables], backgroundColor: ["#22c55e", "#ef4444", "#38bdf8"] }] }, options: { responsive: true, animation: false, plugins: { title: { display: true, text: "Distribución de residuos", color: "white" }, legend: { labels: { color: "white" } } } } });
     const meses = Array.from({length: 6}, (_, i) => { const fecha = new Date(); fecha.setMonth(fecha.getMonth() - 5 + i); return fecha; });
     const valores = meses.map(mes => reportesActuales.filter(r => { const fecha = fechaReporte(r); return fecha.getMonth() === mes.getMonth() && fecha.getFullYear() === mes.getFullYear(); }).length);
-    if (window.graficoMensual) window.graficoMensual.destroy();
-    window.graficoMensual = new Chart(document.getElementById("graficoMensual"), { type: "line", data: { labels: meses.map(m => m.toLocaleDateString("es-EC", {month:"short"})), datasets: [{ label: "Reportes por mes", data: valores, borderColor: "#4ade80", backgroundColor: "rgba(74,222,128,.18)", fill: true, tension: .35 }] }, options: { responsive: true, plugins: { legend: { labels: { color: "white" } } }, scales: { x: { ticks: { color: "white" } }, y: { beginAtZero:true, ticks: { color: "white" } } } } });
+    if (window.graficoMensual && typeof window.graficoMensual.destroy === "function") {
+        window.graficoMensual.destroy();
+    }
+    window.graficoMensual = new Chart(document.getElementById("graficoMensual"), { type: "line", data: { labels: meses.map(m => m.toLocaleDateString("es-EC", {month:"short"})), datasets: [{ label: "Reportes por mes", data: valores, borderColor: "#4ade80", backgroundColor: "rgba(74,222,128,.18)", fill: true, tension: .35 }] }, options: { responsive: true, animation: false, plugins: { legend: { labels: { color: "white" } } }, scales: { x: { ticks: { color: "white" } }, y: { beginAtZero:true, ticks: { color: "white" } } } } });
 }
 
 window.verDetalleReporte = function(id) {
     const reporte = reportesActuales.find(r => r.id === id); if (!reporte) return;
     const fotos = (reporte.fotos || []).map(url => `<a href="${escaparHTML(url)}" target="_blank" rel="noopener"><img src="${escaparHTML(url)}" alt="Fotografía del reporte"></a>`).join("") || "<p>Este reporte no tiene fotografías.</p>";
-    document.getElementById("contenidoDetalleReporte").innerHTML = `<h2 id="tituloDetalleReporte">${escaparHTML(reporte.tipo)}</h2><p class="detalle-meta">${escaparHTML(reporte.estado)} · Prioridad ${prioridadReporte(reporte)}</p><p>${escaparHTML(reporte.descripcion)}</p><dl><dt>Sector</dt><dd>${escaparHTML(reporte.sector)}</dd><dt>Nivel</dt><dd>${escaparHTML(reporte.nivel)}</dd><dt>Fecha</dt><dd>${fechaReporte(reporte).toLocaleString("es-EC")}</dd></dl><div class="galeria-detalle">${fotos}</div>`;
+    document.getElementById("contenidoDetalleReporte").innerHTML = `<h2 id="tituloDetalleReporte">${escaparHTML(codigoReporte(reporte))}</h2><p class="detalle-meta">${escaparHTML(reporte.tipo)}${reporte.subtipo ? ` · ${escaparHTML(reporte.subtipo)}` : ""} · ${escaparHTML(reporte.estado)} · Prioridad ${prioridadReporte(reporte)}</p><p>${escaparHTML(reporte.descripcion)}</p><dl><dt>Sector</dt><dd>${escaparHTML(reporte.sector)}</dd><dt>Nivel</dt><dd>${escaparHTML(reporte.nivel)}</dd><dt>Reportado por</dt><dd>${escaparHTML(reporte.correo)}</dd><dt>Fecha</dt><dd>${fechaReporte(reporte).toLocaleString("es-EC")}</dd></dl><div class="galeria-detalle">${fotos}</div>${esAdministrador() ? `<button class="btn-popup btn-ruta" type="button" onclick="cerrarDetalleReporte(); trazarRutaHasta(${Number(reporte.lat)}, ${Number(reporte.lon)})">Cómo llegar a este reporte</button>` : ""}`;
     document.getElementById("modalReporte").hidden = false;
 };
 window.cerrarDetalleReporte = () => document.getElementById("modalReporte").hidden = true;
-window.actualizarEstadoReporte = async function(id, estado) { const reporte = reportesActuales.find(r => r.id === id); if (!reporte || auth.currentUser?.email !== reporte.correo) return; await updateDoc(doc(db, "reportes", id), { estado }); mostrarToast("Estado actualizado"); await cargarReportes(); };
+window.actualizarEstadoReporte = async function(id, estado) {
+    if (!esAdministrador()) {
+        alert("Solo el administrador puede cambiar el estado de los reportes.");
+        return;
+    }
+    try {
+        await updateDoc(doc(db, "reportes", id), { estado });
+        const mensajes = {
+            "Atendido": "Reporte movido al apartado Atendidos",
+            "Descartado": "Reporte movido al apartado Descartados"
+        };
+        mostrarToast(mensajes[estado] || "Estado actualizado");
+        await cargarReportes();
+    } catch(error) {
+        alert("No se pudo cambiar el estado: " + error.message);
+        await cargarReportes();
+    }
+};
 
 function actualizarProgresoCarga(indice, total) { const caja = document.getElementById("progresoCarga"); caja.hidden = false; document.getElementById("barraProgreso").style.width = `${Math.round(indice * 100 / total)}%`; document.getElementById("textoProgreso").textContent = `Subiendo fotografía ${indice} de ${total}...`; }
 async function subirImagenesASupabase(imagenes) { const urls=[]; const cliente = await obtenerClienteSupabase(); for (let i=0; i<imagenes.length; i++) { const imagen=imagenes[i]; if(!imagen.type.startsWith("image/") || imagen.size > 5 * 1024 * 1024) throw new Error("Cada fotografía debe ser una imagen de máximo 5 MB."); actualizarProgresoCarga(i, imagenes.length); const ruta=`reportes/${Date.now()}-${crypto.randomUUID()}.${imagen.name.split(".").pop() || "jpg"}`; const {error}=await cliente.storage.from(BUCKET_FOTOS).upload(ruta, imagen,{contentType:imagen.type,upsert:false}); if(error) throw error; urls.push(cliente.storage.from(BUCKET_FOTOS).getPublicUrl(ruta).data.publicUrl); actualizarProgresoCarga(i+1, imagenes.length); } return urls; }
 
-window.mostrarConfirmacionReporte = datos => new Promise(resolve => { resolverConfirmacion = resolve; document.getElementById("contenidoConfirmacion").innerHTML = `<p><b>Tipo:</b> ${escaparHTML(datos.tipo)}</p><p><b>Sector:</b> ${escaparHTML(datos.sector)}</p><p><b>Nivel:</b> ${escaparHTML(datos.nivel)}</p><p><b>Ubicación:</b> ${datos.lat.toFixed(5)}, ${datos.lon.toFixed(5)}</p><p><b>Fotografías:</b> ${datos.fotos} seleccionada(s)</p>`; document.getElementById("modalConfirmacion").hidden = false; });
+window.mostrarConfirmacionReporte = datos => new Promise(resolve => { resolverConfirmacion = resolve; document.getElementById("contenidoConfirmacion").innerHTML = `<p><b>Reportante:</b> ${escaparHTML(datos.reportante)}</p><p><b>Tipo:</b> ${escaparHTML(datos.tipo)}${datos.subtipo ? ` · ${escaparHTML(datos.subtipo)}` : ""}</p><p><b>Sector:</b> ${escaparHTML(datos.sector)}</p><p><b>Nivel:</b> ${escaparHTML(datos.nivel)}</p><p><b>Ubicación:</b> ${datos.lat.toFixed(5)}, ${datos.lon.toFixed(5)}</p><p><b>Fotografías:</b> ${datos.fotos} seleccionada(s)</p>`; document.getElementById("modalConfirmacion").hidden = false; });
 window.resolverConfirmacionReporte = aceptar => { document.getElementById("modalConfirmacion").hidden = true; resolverConfirmacion?.(aceptar); resolverConfirmacion = null; };
 
 window.obtenerUbicacion = async function() {
-    if (!auth.currentUser) return alert("Debe iniciar sesión");
+    const usuario = auth.currentUser || await asegurarSesionPublica();
+    if (!usuario) return alert("No se pudo preparar el envío público. Actualiza la página e inténtalo nuevamente.");
+    const nombreReportante = document.getElementById("nombreReportante").value.trim();
+    const correoContacto = document.getElementById("correoReporte").value.trim().toLowerCase();
+    const identidadReportante = nombreReportante && correoContacto
+        ? `${nombreReportante} (${correoContacto})`
+        : nombreReportante || correoContacto || "Anónimo";
     const tipo = document.getElementById("tipo").value;
+    const subtipo = document.getElementById("subtipo").value;
     const descripcion = document.getElementById("descripcion").value.trim();
     const sector = document.getElementById("sector").value.trim();
     const nivel = document.getElementById("nivel").value;
+    if (correoContacto && !/^\S+@\S+\.\S+$/.test(correoContacto)) return alert("El correo es opcional, pero si lo escribes debe ser válido.");
     if (!descripcion || !sector) return alert("Completa la descripción y el sector antes de continuar.");
     try {
         const posicion = await new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 15000 }));
         const lat = posicion.coords.latitude, lon = posicion.coords.longitude;
-        const confirmar = await mostrarConfirmacionReporte({ tipo, sector, nivel, lat, lon, fotos: imagenesSeleccionadas.length });
+        const confirmar = await mostrarConfirmacionReporte({ reportante: identidadReportante, tipo, subtipo, sector, nivel, lat, lon, fotos: imagenesSeleccionadas.length });
         if (!confirmar) return;
         const fotos = await subirImagenesASupabase(imagenesSeleccionadas);
-        await addDoc(collection(db, "reportes"), { correo: auth.currentUser.email, tipo, descripcion, sector, nivel, estado: "Pendiente", lat, lon, fotos, fecha: new Date() });
+        await addDoc(collection(db, "reportes"), { correo: identidadReportante, uidAutor: usuario.uid, tipo, subtipo, descripcion, sector, nivel, estado: "Pendiente", lat, lon, fotos, fecha: new Date() });
         document.getElementById("progresoCarga").hidden = true;
         imagenesSeleccionadas = []; document.getElementById("vistaPrevia").innerHTML = "";
         document.getElementById("descripcion").value = ""; document.getElementById("sector").value = "";
-        mostrarToast("Reporte guardado y enviado para atención");
+        document.getElementById("nombreReportante").value = ""; document.getElementById("correoReporte").value = "";
+        mostrarToast(esAdministrador()
+            ? "Reporte guardado. Pulsa el punto en el mapa y elige Cómo llegar."
+            : "Reporte guardado. El administrador se encargará de atenderlo.");
         await cargarReportes();
+        map.setView([lat, lon], 16);
     } catch (error) {
         document.getElementById("progresoCarga").hidden = true;
         alert("No se pudo enviar el reporte: " + error.message);
     }
 };
 
-["filtroTipo","filtroNivel","filtroEstado","filtroFechaDesde"].forEach(id => document.getElementById(id).addEventListener("change", aplicarFiltros));
+["filtroTipo","filtroNivel","filtroEstado","filtroFechaDesde","filtroCriticos","filtroMios"].forEach(id => document.getElementById(id).addEventListener("change", aplicarFiltros));
+const CLASIFICACION_RESIDUOS = {
+    "Orgánico": ["Restos de comida", "Jardín y poda", "Madera", "Otro orgánico"],
+    "Inorgánico": ["Plástico no reciclable", "Tecnopor", "Textiles", "Otro inorgánico"],
+    "Reciclable": ["Plástico", "Papel y cartón", "Vidrio", "Metal", "Tetra Pak"],
+    "Peligroso": ["Pilas y baterías", "Aceites usados", "Medicinas vencidas", "Químicos y pintura", "Residuos hospitalarios", "Aparatos electrónicos"]
+};
+function actualizarSubtipos() {
+    const tipo = document.getElementById("tipo").value;
+    const subtipo = document.getElementById("subtipo");
+    subtipo.innerHTML = (CLASIFICACION_RESIDUOS[tipo] || []).map(opcion => `<option>${opcion}</option>`).join("");
+    if (tipo === "Peligroso") document.getElementById("nivel").value = "Alto";
+}
+document.getElementById("tipo").addEventListener("change", actualizarSubtipos);
+actualizarSubtipos();
 document.getElementById("filtroSector").addEventListener("input", aplicarFiltros);
+document.getElementById("consultaReporte").addEventListener("keydown", function(evento) {
+    if (evento.key === "Enter") {
+        evento.preventDefault();
+        consultarReporte();
+    }
+});
+document.getElementById("buscarGad")?.addEventListener("keydown", function(evento) {
+    if (evento.key === "Enter") {
+        evento.preventDefault();
+        buscarGadEnMapa();
+    }
+});
 
 async function actualizarPorcentajesAnalisis() {
     actualizarEstadisticas();
@@ -1837,340 +2220,339 @@ async function cargarFotoParaPDF(url) {
 }
 
 window.descargarPDF = async function(){
-    alert("Entró al PDF");
-
-await actualizarEstadisticas();
-await actualizarPorcentajesAnalisis();
-const querySnapshot =
-await getDocs(collection(db, "reportes"));
-
-const totalReportes = querySnapshot.size;
-
-let clave = prompt("Ingrese clave de administrador");
-
-if(clave !== "UTEQ2026"){
-
-alert("Acceso denegado");
-return;
-
-}
-
-const { jsPDF } = window.jspdf;
-
-let doc = new jsPDF("p","mm","a4");
-
-// FONDO
-doc.setFillColor(245,248,250);
-doc.rect(0,0,210,297,"F");
-
-// HEADER
-doc.setFillColor(34,139,34);
-doc.rect(0,0,210,35,"F");
-
-// TITULO
-doc.setTextColor(255,255,255);
-doc.setFontSize(24);
-
-doc.text(
-"Sistema Inteligente Ambiental",
-20,
-22
-);
-
-// SUBTITULO
-doc.setFontSize(11);
-
-doc.text(
-"Universidad Técnica Estatal de Quevedo",
-20,
-30
-);
-
-// FECHA
-doc.setTextColor(80);
-
-doc.setFontSize(10);
-
-doc.text(
-"Fecha: " + new Date().toLocaleString(),
-20,
-45
-);
-
-// TARJETA
-doc.setFillColor(255,255,255);
-
-doc.roundedRect(
-15,
-55,
-180,
-55,
-5,
-5,
-"F"
-);
-
-// TITULO TABLA
-doc.setTextColor(34,139,34);
-
-doc.setFontSize(18);
-
-doc.text(
-"Resumen Ambiental",
-20,
-68
-);
-
-// LINEA
-doc.setDrawColor(34,139,34);
-
-doc.line(20,72,120,72);
-
-// TABLA
-doc.autoTable({
-
-startY: 80,
-
-head: [[
-"Indicador",
-"Valor"
-]],
-
-body: [
-
-
-
-[
-"Total Reportes",
-totalReportes
-],
-
-[
-"Riesgo Ambiental",
-document.getElementById("cardRiesgo").innerText
-],
-
-[
-"Puntos Críticos",
-document.getElementById("cardCriticos").innerText
-],
-
-[
-"Estado Ambiental",
-document.getElementById("cardEstado").innerText
-],
-
-[
-"Orgánicos",
-document.getElementById("orgTotal").innerText
-],
-
-[
-"Inorgánicos",
-document.getElementById("inoTotal").innerText
-],
-
-[
-"Reciclables",
-document.getElementById("recTotal").innerText
-],
-
-[
-"Eco Score",
-document.getElementById("ecoScore").innerText
-]
-
-],
-
-theme: "grid",
-
-styles: {
-
-fontSize: 11,
-cellPadding: 4
-
-},
-
-headStyles: {
-
-fillColor: [34,139,34],
-textColor: 255,
-fontSize: 12
-
-},
-
-alternateRowStyles: {
-
-fillColor: [245,245,245]
-
-}
-
-});
-
-const filas = [];
-
-querySnapshot.forEach((docu)=>{
-
-const data = docu.data();
-
-filas.push([
-data.correo || "",
-data.tipo || "",
-data.sector || "",
-data.nivel || ""
-]);
-
-});
-
-doc.autoTable({
-
-startY: doc.lastAutoTable.finalY + 15,
-
-head:[[
-"Correo",
-"Tipo",
-"Sector",
-"Nivel"
-]],
-
-body: filas
-
-});
-
-// GALERIA DE FOTOGRAFIAS
-const reportesConFotos = [];
-
-querySnapshot.forEach((docu) => {
-    const data = docu.data();
-    const fotos = Array.isArray(data.fotos)
-        ? data.fotos
-        : (data.fotoURL ? [data.fotoURL] : []);
-
-    if (fotos.length) {
-        reportesConFotos.push({
-            tipo: data.tipo || "Sin tipo",
-            sector: data.sector || "Sin sector",
-            fotos
-        });
+    if (!esAdministrador()) {
+        alert("Solo el administrador puede exportar reportes.");
+        return;
     }
-});
+    if (!reportesActuales.length) {
+        alert("No hay reportes para generar el informe.");
+        return;
+    }
 
-if (reportesConFotos.length) {
-    doc.addPage();
-    let yFoto = 24;
-    let numeroFoto = 0;
+    mostrarToast("Preparando el generador de PDF...");
+    try {
+        await asegurarLibreriasPDF();
+    } catch (error) {
+        alert("No se pudo preparar la descarga del PDF. Verifica tu conexión e inténtalo nuevamente.");
+        return;
+    }
+    mostrarToast("Generando informe PDF...");
 
-    const encabezadoFotos = () => {
-        doc.setFillColor(34,139,34);
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF("p", "mm", "a4");
+    const ahora = new Date();
+    const total = reportesActuales.length;
+    const pendientes = reportesActuales.filter(r => r.estado === "Pendiente" || r.estado === "En revisión").length;
+    const criticos = reportesActuales.filter(r => prioridadReporte(r) === "Crítica").length;
+    const conFotos = reportesActuales.filter(r => Array.isArray(r.fotos) && r.fotos.length).length;
+    const eco = Math.max(0, 100 - pendientes * 4 - reportesActuales.filter(r => r.nivel === "Alto").length * 6);
+    const riesgo = criticos ? "ALTO" : reportesActuales.some(r => r.nivel === "Medio" || r.nivel === "Alto") ? "MEDIO" : "BAJO";
+    const porEstado = contarPor(reportesActuales, r => r.estado || "Pendiente");
+    const porTipo = contarPor(reportesActuales, r => r.tipo);
+    const navy = [15, 23, 42];
+    const verde = [22, 163, 74];
+
+    const encabezadoPagina = (titulo) => {
+        doc.setFillColor(...navy);
         doc.rect(0, 0, 210, 16, "F");
-        doc.setTextColor(255,255,255);
-        doc.setFontSize(14);
-        doc.text("Fotografías de los reportes", 15, 10);
-        doc.setTextColor(60);
-        doc.setFontSize(9);
+        doc.setFillColor(...verde);
+        doc.rect(0, 16, 210, 1.6, "F");
+        doc.setTextColor(255, 255, 255);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10);
+        doc.text(titulo, 16, 10);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        doc.setTextColor(203, 213, 225);
+        doc.text("SIGER · UTEQ", 194, 10, { align: "right" });
     };
 
-    encabezadoFotos();
+    const estiloTabla = {
+        theme: "striped",
+        styles: { fontSize: 8, cellPadding: 2.6, textColor: [30, 41, 59], lineColor: [226, 232, 240], lineWidth: 0.1 },
+        headStyles: { fillColor: navy, textColor: 255, fontStyle: "bold", fontSize: 8, cellPadding: 3 },
+        alternateRowStyles: { fillColor: [241, 245, 249] },
+        margin: { left: 16, right: 16, top: 22, bottom: 22 }
+    };
 
-    for (const reporte of reportesConFotos) {
-        for (const url of reporte.fotos) {
-            try {
-                const foto = await cargarFotoParaPDF(url);
-                const anchoMaximo = 82;
-                const altoMaximo = 60;
-                const proporcion = Math.min(anchoMaximo / foto.width, altoMaximo / foto.height);
-                const ancho = foto.width * proporcion;
-                const alto = foto.height * proporcion;
-                const columna = numeroFoto % 2;
-                const x = columna === 0 ? 18 : 110;
+    doc.setFillColor(...navy);
+    doc.rect(0, 0, 210, 46, "F");
+    doc.setFillColor(...verde);
+    doc.rect(0, 46, 210, 2.2, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    doc.text("Informe ambiental de residuos", 16, 20);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(186, 230, 199);
+    doc.text("Sistema de Monitoreo de Residuos · Universidad Técnica Estatal de Quevedo", 16, 28);
+    doc.setFontSize(8);
+    doc.setTextColor(148, 163, 184);
+    doc.text(`Generado el ${ahora.toLocaleString("es-EC")}  ·  ${auth.currentUser?.email || "Administrador"}`, 16, 38);
 
-                if (columna === 0 && yFoto + 78 > 280) {
-                    doc.addPage();
-                    encabezadoFotos();
-                    yFoto = 24;
+    const kpis = [
+        ["Total", String(total)],
+        ["Pendientes", String(pendientes)],
+        ["Críticos", String(criticos)],
+        ["Eco Score", String(eco)]
+    ];
+    kpis.forEach((kpi, i) => {
+        const x = 16 + i * 46;
+        doc.setFillColor(255, 255, 255);
+        doc.setDrawColor(226, 232, 240);
+        doc.roundedRect(x, 56, 42, 22, 2.2, 2.2, "FD");
+        doc.setTextColor(100, 116, 139);
+        doc.setFontSize(7);
+        doc.text(String(kpi[0]).toUpperCase(), x + 4, 63);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(...navy);
+        doc.setFontSize(14);
+        doc.text(String(kpi[1]), x + 4, 73);
+        doc.setFont("helvetica", "normal");
+    });
+
+    doc.autoTable({
+        ...estiloTabla,
+        startY: 86,
+        head: [["Indicador", "Cantidad", "%"]],
+        body: [
+            ...porEstado.map(([nombre, cantidad]) => [nombre, cantidad, `${total ? Math.round(cantidad * 100 / total) : 0}%`]),
+            ...porTipo.map(([nombre, cantidad]) => [nombre, cantidad, `${total ? Math.round(cantidad * 100 / total) : 0}%`]),
+            ["Puntos críticos", criticos, `${total ? Math.round(criticos * 100 / total) : 0}%`],
+            ["Con fotografías", conFotos, `${total ? Math.round(conFotos * 100 / total) : 0}%`],
+            ["Riesgo ambiental", riesgo, ""]
+        ],
+        columnStyles: { 0: { cellWidth: 90 }, 1: { cellWidth: 45, halign: "center" }, 2: { cellWidth: 43, halign: "center" } }
+    });
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(...navy);
+    doc.text("Inventario de reportes", 16, doc.lastAutoTable.finalY + 10);
+
+    doc.autoTable({
+        ...estiloTabla,
+        startY: doc.lastAutoTable.finalY + 14,
+        head: [["Código", "Fecha", "Tipo", "Sector", "Nivel", "Estado", "Prioridad"]],
+        body: reportesActuales
+            .slice()
+            .sort((a, b) => fechaReporte(b) - fechaReporte(a))
+            .map(reporte => [
+                codigoReporte(reporte),
+                fechaReporte(reporte).toLocaleDateString("es-EC"),
+                reporte.tipo || "",
+                reporte.sector || "",
+                reporte.nivel || "",
+                reporte.estado || "Pendiente",
+                prioridadReporte(reporte)
+            ]),
+        didDrawPage: (data) => {
+            if (data.pageNumber > 1) encabezadoPagina("Inventario de reportes");
+        }
+    });
+
+    const reportesConFotos = reportesActuales
+        .filter(reporte => Array.isArray(reporte.fotos) && reporte.fotos.length)
+        .map(reporte => ({
+            codigo: codigoReporte(reporte),
+            tipo: reporte.tipo || "Sin tipo",
+            sector: reporte.sector || "Sin sector",
+            fotos: reporte.fotos
+        }));
+
+    if (reportesConFotos.length) {
+        doc.addPage();
+        encabezadoPagina("Evidencia fotográfica");
+        let yFoto = 26;
+        let numeroFoto = 0;
+
+        for (const reporte of reportesConFotos) {
+            for (const url of reporte.fotos) {
+                try {
+                    const foto = await cargarFotoParaPDF(url);
+                    const anchoMaximo = 82;
+                    const altoMaximo = 52;
+                    const proporcion = Math.min(anchoMaximo / foto.width, altoMaximo / foto.height);
+                    const ancho = foto.width * proporcion;
+                    const alto = foto.height * proporcion;
+                    const columna = numeroFoto % 2;
+                    const x = columna === 0 ? 18 : 110;
+
+                    if (columna === 0 && yFoto + 72 > 272) {
+                        doc.addPage();
+                        encabezadoPagina("Evidencia fotográfica");
+                        yFoto = 26;
+                    }
+
+                    doc.setFillColor(255, 255, 255);
+                    doc.setDrawColor(226, 232, 240);
+                    doc.roundedRect(x - 3, yFoto - 3, 88, 66, 2.5, 2.5, "FD");
+                    doc.addImage(foto.data, "JPEG", x + (anchoMaximo - ancho) / 2, yFoto, ancho, alto);
+                    doc.setFontSize(7.5);
+                    doc.setTextColor(...navy);
+                    doc.text(`${reporte.codigo} · ${reporte.tipo}`, x, yFoto + 58, { maxWidth: 82 });
+                    doc.setTextColor(100, 116, 139);
+                    doc.text(reporte.sector, x, yFoto + 62, { maxWidth: 82 });
+
+                    numeroFoto++;
+                    if (numeroFoto % 2 === 0) yFoto += 72;
+                } catch (error) {
+                    console.warn("No se pudo añadir una fotografía al PDF:", error);
                 }
-
-                doc.setDrawColor(210, 220, 210);
-                doc.roundedRect(x - 3, yFoto - 3, 88, 70, 3, 3, "S");
-                doc.addImage(foto.data, "JPEG", x + (anchoMaximo - ancho) / 2, yFoto, ancho, alto);
-                doc.setFontSize(8);
-                doc.text(
-                    `Tipo: ${reporte.tipo} | Sector: ${reporte.sector}`,
-                    x,
-                    yFoto + 64,
-                    { maxWidth: 80 }
-                );
-
-                numeroFoto++;
-                if (numeroFoto % 2 === 0) yFoto += 78;
-            } catch (error) {
-                console.warn("No se pudo añadir una fotografía al PDF:", error);
             }
         }
     }
+
+    const totalPaginas = doc.getNumberOfPages();
+    for (let i = 1; i <= totalPaginas; i++) {
+        doc.setPage(i);
+        doc.setFillColor(...navy);
+        doc.rect(0, 285, 210, 12, "F");
+        doc.setTextColor(203, 213, 225);
+        doc.setFontSize(7.5);
+        doc.setFont("helvetica", "normal");
+        doc.text("Informe generado por el Sistema de Monitoreo de Residuos", 16, 292);
+        doc.text(`${i} / ${totalPaginas}`, 194, 292, { align: "right" });
+    }
+
+    const nombre = `SIGER_Informe_${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, "0")}-${String(ahora.getDate()).padStart(2, "0")}.pdf`;
+    doc.save(nombre);
+    mostrarToast("Informe PDF descargado");
 }
 
+function contarPor(lista, obtenerClave) {
+    const conteo = {};
+    lista.forEach(item => {
+        const clave = obtenerClave(item) || "Sin dato";
+        conteo[clave] = (conteo[clave] || 0) + 1;
+    });
+    return Object.entries(conteo).sort((a, b) => b[1] - a[1]);
+}
 
-// FOOTER
-doc.setFontSize(10);
-
-doc.setTextColor(120);
-
-doc.text(
-"Reporte generado automáticamente por el sistema ambiental.",
-20,
-285
-);
-
-// DESCARGAR
-doc.save("Reporte_Residuos.pdf");
-
-alert("PDF descargado correctamente");
-
+function hojaExcel(filas, anchos, conFiltro = false) {
+    const hoja = XLSX.utils.aoa_to_sheet(filas);
+    hoja["!cols"] = anchos.map(wch => ({ wch }));
+    if (conFiltro && filas.length > 1) {
+        const ultima = XLSX.utils.encode_col(filas[0].length - 1);
+        hoja["!autofilter"] = { ref: `A1:${ultima}${filas.length}` };
+        hoja["!views"] = [{ state: "frozen", ySplit: 1, topLeftCell: "A2", activeCell: "A2" }];
+    }
+    return hoja;
 }
 
 window.descargarExcel = async function(){
-    alert("Entró al Excel");
+    if (!esAdministrador()) {
+        alert("Solo el administrador puede exportar reportes.");
+        return;
+    }
+    if (!reportesActuales.length) {
+        alert("No hay reportes para exportar.");
+        return;
+    }
 
-let clave =
-prompt("Ingrese clave de administrador");
+    mostrarToast("Preparando el generador de Excel...");
+    try {
+        await asegurarLibreriaExcel();
+    } catch (error) {
+        alert("No se pudo preparar la descarga de Excel. Verifica tu conexión e inténtalo nuevamente.");
+        return;
+    }
 
-if(clave !== "UTEQ2026"){
+    const ahora = new Date();
+    const total = reportesActuales.length;
+    const conFotos = reportesActuales.filter(r => Array.isArray(r.fotos) && r.fotos.length).length;
+    const porEstado = contarPor(reportesActuales, r => r.estado || "Pendiente");
+    const porTipo = contarPor(reportesActuales, r => r.tipo);
+    const porPrioridad = contarPor(reportesActuales, r => prioridadReporte(r));
+    const porSector = contarPor(reportesActuales, r => (r.sector || "").trim());
 
-alert("Acceso denegado");
-return;
+    const resumen = [
+        ["SISTEMA DE MONITOREO DE RESIDUOS"],
+        ["Universidad Técnica Estatal de Quevedo"],
+        [],
+        ["Fecha de exportación", ahora.toLocaleString("es-EC")],
+        ["Exportado por", auth.currentUser?.email || "Administrador"],
+        ["Total de registros", total],
+        ["Reportes con fotografías", conFotos],
+        ["Reportes sin fotografías", total - conFotos],
+        [],
+        ["Indicador", "Cantidad", "Porcentaje"],
+        ...porEstado.map(([nombre, cantidad]) => [nombre, cantidad, total ? Math.round(cantidad * 1000 / total) / 10 : 0]),
+        [],
+        ["Tipo de residuo", "Cantidad", "Porcentaje"],
+        ...porTipo.map(([nombre, cantidad]) => [nombre, cantidad, total ? Math.round(cantidad * 1000 / total) / 10 : 0]),
+        [],
+        ["Prioridad", "Cantidad", "Porcentaje"],
+        ...porPrioridad.map(([nombre, cantidad]) => [nombre, cantidad, total ? Math.round(cantidad * 1000 / total) / 10 : 0])
+    ];
 
-}
+    const sectores = [
+        ["Sector", "Reportes", "Porcentaje"],
+        ...porSector.map(([nombre, cantidad]) => [nombre, cantidad, total ? Math.round(cantidad * 1000 / total) / 10 : 0])
+    ];
 
-let tabla =
-document.querySelector("table");
+    const encabezado = [
+        "Código",
+        "Fecha",
+        "Correo",
+        "Tipo",
+        "Clasificación",
+        "Descripción",
+        "Sector",
+        "Nivel",
+        "Estado",
+        "Prioridad",
+        "Fotos",
+        "Latitud",
+        "Longitud",
+        "Google Maps"
+    ];
 
-let libro =
-XLSX.utils.table_to_book(
-tabla,
-{sheet:"Reportes"}
-);
+    const filas = reportesActuales
+        .slice()
+        .sort((a, b) => fechaReporte(b) - fechaReporte(a))
+        .map(reporte => {
+            const lat = Number(reporte.lat);
+            const lon = Number(reporte.lon);
+            const fotos = Array.isArray(reporte.fotos) ? reporte.fotos.length : 0;
+            return [
+                codigoReporte(reporte),
+                fechaReporte(reporte).toLocaleString("es-EC"),
+                reporte.correo || "",
+                reporte.tipo || "",
+                reporte.subtipo || "",
+                reporte.descripcion || "",
+                reporte.sector || "",
+                reporte.nivel || "",
+                reporte.estado || "Pendiente",
+                prioridadReporte(reporte),
+                fotos,
+                Number.isFinite(lat) ? Number(lat.toFixed(6)) : "",
+                Number.isFinite(lon) ? Number(lon.toFixed(6)) : "",
+                Number.isFinite(lat) && Number.isFinite(lon) ? `https://www.google.com/maps?q=${lat},${lon}` : ""
+            ];
+        });
 
-alert("Excel generado");
+    const libro = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(libro, hojaExcel(resumen, [28, 22, 14]), "Resumen");
+    XLSX.utils.book_append_sheet(
+        libro,
+        hojaExcel([encabezado, ...filas], [16, 20, 28, 14, 22, 36, 18, 10, 14, 12, 8, 12, 12, 42], true),
+        "Reportes"
+    );
+    XLSX.utils.book_append_sheet(libro, hojaExcel(sectores, [28, 12, 14], true), "Por sector");
 
-XLSX.writeFile(
-libro,
-"Reporte_Residuos.xlsx"
-);
-
-alert("Excel descargado");
-
+    const nombre = `SIGER_Reportes_${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, "0")}-${String(ahora.getDate()).padStart(2, "0")}.xlsx`;
+    XLSX.writeFile(libro, nombre);
+    mostrarToast("Excel técnico descargado");
 }
 
 window.reiniciarSistema = async function(){
 
-let clave = prompt("Ingrese clave de administrador");
-
-if(clave !== "UTEQ2026"){
-
-    alert("Acceso denegado");
+if(!esAdministrador()){
+    alert("Solo el administrador puede reiniciar el sistema.");
     return;
-
 }
 
 let confirmar = confirm(
@@ -2209,9 +2591,52 @@ location.reload();
 
 let centrosMostrados = false;
 
+const MUNICIPIOS_GAD = window.MUNICIPIOS_GAD || [];
+
+function municipioMasCercano(lat, lon) {
+    let mejor = MUNICIPIOS_GAD[0];
+    let menor = Infinity;
+    for (const municipio of MUNICIPIOS_GAD) {
+        const distancia = Math.hypot((Number(lat) - municipio.lat) * 111, (Number(lon) - municipio.lon) * 111);
+        if (distancia < menor) {
+            menor = distancia;
+            mejor = municipio;
+        }
+    }
+    return { ...mejor, distanciaKm: menor };
+}
+
+function municipioACargo(reportes) {
+    const grupos = new Map();
+    for (const reporte of reportes) {
+        const gad = municipioMasCercano(reporte.lat, reporte.lon);
+        const clave = `${gad.nombre}|${gad.provincia || ""}`;
+        if (!grupos.has(clave)) grupos.set(clave, { municipio: gad, reportes: [] });
+        grupos.get(clave).reportes.push(reporte);
+    }
+    return [...grupos.values()].sort((a, b) => {
+        if (b.reportes.length !== a.reportes.length) return b.reportes.length - a.reportes.length;
+        const distA = a.reportes.reduce((suma, reporte) => suma + distanciaAproxKm(a.municipio, reporte), 0);
+        const distB = b.reportes.reduce((suma, reporte) => suma + distanciaAproxKm(b.municipio, reporte), 0);
+        return distA - distB;
+    })[0];
+}
+
+function marcarSalidaMunicipio(municipio) {
+    L.marker([municipio.lat, municipio.lon], {
+        icon: L.divIcon({
+            className: "marcador-gad",
+            html: "🏛",
+            iconSize: [28, 28],
+            iconAnchor: [14, 28],
+            popupAnchor: [0, -24]
+        }),
+        zIndexOffset: 700
+    }).bindPopup(`<b>Salida del camión</b><br>GAD Municipal de ${escaparHTML(municipio.nombre)}<br>${municipio.provincia ? `Provincia: ${escaparHTML(municipio.provincia)}<br>` : ""}Municipio a cargo`).addTo(capaRutas);
+}
+
 window.mostrarMunicipios = function(){
 
-    // Si ya están visibles, ocultarlos
     if(centrosMostrados){
         capaMunicipios.clearLayers();
         centrosMostrados = false;
@@ -2220,144 +2645,310 @@ window.mostrarMunicipios = function(){
 
     centrosMostrados = true;
 
-    // BABAHOYO
-    L.marker([-1.80214,-79.53428]).addTo(capaMunicipios).bindPopup(`
-    <b>🏛 GAD Municipal de Babahoyo</b><br>
-    Entidad responsable de la gestión de residuos sólidos.
-    <br><br>
-    <button onclick="comoLlegar(-1.80214,-79.53428)">
-    🏛 Ir al Municipio
-    </button>`);
+    MUNICIPIOS_GAD.forEach(municipio => {
+        L.circleMarker([municipio.lat, municipio.lon], {
+            radius: 5,
+            fillColor: "#16a34a",
+            color: "#fff",
+            weight: 1,
+            fillOpacity: 0.9
+        }).addTo(capaMunicipios).bindPopup(`
+            <b>🏛 GAD Municipal de ${escaparHTML(municipio.nombre)}</b><br>
+            ${municipio.provincia ? `Provincia: ${escaparHTML(municipio.provincia)}<br>` : ""}
+            Entidad responsable de la gestión de residuos sólidos.
+            ${esAdministrador() ? `<br><br><button type="button" onclick="comoLlegar(${municipio.lat},${municipio.lon})">🏛 Ir al Municipio</button>` : "<br><br>"}
+            <a class="enlace-gmaps" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`GAD Municipal de ${municipio.nombre}, ${municipio.provincia || "Ecuador"}`)}" target="_blank" rel="noopener">Abrir en Google Maps</a>`);
+    });
 
-    // BABA
-    L.marker([-1.78201,-79.67914]).addTo(capaMunicipios).bindPopup(`
-    <b>🏛 GAD Municipal de Baba</b><br>
-    Entidad responsable de la gestión de residuos sólidos.
-    <br><br>
-    <button onclick="comoLlegar(-1.78201,-79.67914)">
-    🏛 Ir al Municipio
-    </button>`);
-
-    // MONTALVO
-    L.marker([-1.79153,-79.28815]).addTo(capaMunicipios).bindPopup(`
-    <b>🏛 GAD Municipal de Montalvo</b><br>
-    Entidad responsable de la gestión de residuos sólidos.
-    <br><br>
-    <button onclick="comoLlegar(-1.79153,-79.28815)">
-    🏛 Ir al Municipio
-    </button>`);
-
-    // PUEBLOVIEJO
-    L.marker([-1.55416,-79.53123]).addTo(capaMunicipios).bindPopup(`
-    <b>🏛 GAD Municipal de Puebloviejo</b><br>
-    Entidad responsable de la gestión de residuos sólidos.
-    <br><br>
-    <button onclick="comoLlegar(-1.55416,-79.53123)">
-    🏛 Ir al Municipio
-    </button>`);
-
-    // URDANETA
-    L.marker([-1.57142,-79.47192]).addTo(capaMunicipios).bindPopup(`
-    <b>🏛 GAD Municipal de Urdaneta</b><br>
-    Entidad responsable de la gestión de residuos sólidos.
-    <br><br>
-    <button onclick="comoLlegar(-1.57142,-79.47192)">
-    🏛 Ir al Municipio
-    </button>`);
-
-    // VINCES
-    L.marker([-1.55593,-79.74972]).addTo(capaMunicipios).bindPopup(`
-    <b>🏛 GAD Municipal de Vinces</b><br>
-    Entidad responsable de la gestión de residuos sólidos.
-    <br><br>
-    <button onclick="comoLlegar(-1.55593,-79.74972)">
-    🏛 Ir al Municipio
-    </button>`);
-
-    // QUEVEDO
-    L.marker([-1.024167,-79.466000]).addTo(capaMunicipios).bindPopup(`
-    <b>🏛 GAD Municipal de Quevedo</b><br>
-    Entidad responsable de la gestión de residuos sólidos.
-    <br><br>
-    <button onclick="comoLlegar(-1.024167,-79.466000)">
-    🏛 Ir al Municipio
-    </button>`);
-
-    // BUENA FE
-    L.marker([-0.89389,-79.48911]).addTo(capaMunicipios).bindPopup(`
-    <b>🏛 GAD Municipal de Buena Fe</b><br>
-    Entidad responsable de la gestión de residuos sólidos.
-    <br><br>
-    <button onclick="comoLlegar(-0.89389,-79.48911)">
-    🏛 Ir al Municipio
-    </button>`);
-
-    // MOCACHE
-    L.marker([-1.18131,-79.50853]).addTo(capaMunicipios).bindPopup(`
-    <b>🏛 GAD Municipal de Mocache</b><br>
-    Entidad responsable de la gestión de residuos sólidos.
-    <br><br>
-    <button onclick="comoLlegar(-1.18131,-79.50853)">
-    🏛 Ir al Municipio
-    </button>`);
-
-    // VALENCIA
-    L.marker([-0.72382,-79.35414]).addTo(capaMunicipios).bindPopup(`
-    <b>🏛 GAD Municipal de Valencia</b><br>
-    Entidad responsable de la gestión de residuos sólidos.
-    <br><br>
-    <button onclick="comoLlegar(-0.72382,-79.35414)">
-    🏛 Ir al Municipio
-    </button>`);
-
-    // VENTANAS
-    L.marker([-1.44315,-79.45946]).addTo(capaMunicipios).bindPopup(`
-    <b>🏛 GAD Municipal de Ventanas</b><br>
-    Entidad responsable de la gestión de residuos sólidos.
-    <br><br>
-    <button onclick="comoLlegar(-1.44315,-79.45946)">
-    🏛 Ir al Municipio
-    </button>`);
-
-    // QUINSALOMA
-    L.marker([-1.21852,-79.31174]).addTo(capaMunicipios).bindPopup(`
-    <b>🏛 GAD Municipal de Quinsaloma</b><br>
-    Entidad responsable de la gestión de residuos sólidos.
-    <br><br>
-    <button onclick="comoLlegar(-1.21852,-79.31174)">
-    🏛 Ir al Municipio
-    </button>`);
-
-    // PALENQUE
-    L.marker([-1.43615,-79.75621]).addTo(capaMunicipios).bindPopup(`
-    <b>🏛 GAD Municipal de Palenque</b><br>
-    Entidad responsable de la gestión de residuos sólidos.
-    <br><br>
-    <button onclick="comoLlegar(-1.43615,-79.75621)">
-    🏛 Ir al Municipio
-    </button>`);
-
-    alert("Municipios responsables cargados correctamente");
+    mostrarToast(`${MUNICIPIOS_GAD.length} GAD municipales del Ecuador cargados`);
 }
+
+window.buscarGadEnMapa = function() {
+    const consulta = document.getElementById("buscarGad")?.value.trim().toLowerCase();
+    if (!consulta) return alert("Escribe el nombre del GAD, por ejemplo Pichincha.");
+    const encontrado = MUNICIPIOS_GAD.find(municipio => municipio.nombre.toLowerCase() === consulta)
+        || MUNICIPIOS_GAD.find(municipio => municipio.nombre.toLowerCase().includes(consulta))
+        || MUNICIPIOS_GAD.find(municipio => (municipio.provincia || "").toLowerCase().includes(consulta));
+    if (!encontrado) return alert("No se encontró ese GAD.");
+    if (!centrosMostrados) window.mostrarMunicipios();
+    map.setView([encontrado.lat, encontrado.lon], 14);
+    mostrarToast(`GAD de ${encontrado.nombre} (${encontrado.provincia || "Ecuador"})`);
+};
 
 
 window.comoLlegar = function(lat, lon){
+    if (!exigirAdministradorRutas()) return;
+    trazarRutaHasta(lat, lon, null, { usarGPS: true });
+}
 
-navigator.geolocation.getCurrentPosition(function(pos){
+function formatearMinutosRuta(minutos) {
+    const total = Math.max(1, Math.round(minutos));
+    if (total < 60) return `${total} min`;
+    const horas = Math.floor(total / 60);
+    const resto = total % 60;
+    return resto ? `${horas} h ${resto} min` : `${horas} h`;
+}
 
-const origen =
-`${pos.coords.latitude},${pos.coords.longitude}`;
+function tiempoCamionRecolector(metros, paradas = 1) {
+    const km = metros / 1000;
+    const velocidadKmh = km <= 8 ? 22 : km <= 25 ? 30 : 36;
+    const minutosViaje = (km / velocidadKmh) * 60;
+    const cantidadParadas = Math.max(1, paradas);
+    const minutosAtencion = 12 * cantidadParadas;
+    return {
+        minutos: Math.max(8, Math.round(minutosViaje + minutosAtencion)),
+        velocidadKmh,
+        minutosAtencion,
+        paradas: cantidadParadas
+    };
+}
 
-const destino =
-`${lat},${lon}`;
+window.limpiarRuta = function(){
+    capaRutas.clearLayers();
+    const caja = document.getElementById("infoRuta");
+    if (caja) {
+        caja.hidden = true;
+        caja.innerHTML = "";
+    }
+}
 
-window.open(
-`https://www.google.com/maps/dir/?api=1&origin=${origen}&destination=${destino}&travelmode=driving`,
-"_blank"
-);
+window.trazarRutaHasta = async function(latDestino, lonDestino, origenOpcional, opciones = {}){
+    if (!exigirAdministradorRutas()) return;
+    const destinoLat = Number(latDestino);
+    const destinoLon = Number(lonDestino);
+    if (!Number.isFinite(destinoLat) || !Number.isFinite(destinoLon)) {
+        alert("Este reporte no tiene una ubicación válida.");
+        return;
+    }
 
-});
+    mostrarToast("Trazando ruta del camión recolector...");
 
+    let origen = origenOpcional;
+    let etiquetaOrigen = origen?.nombre ? `GAD Municipal de ${origen.nombre}` : "Salida del camión";
+    if (!origen) {
+        if (opciones.usarGPS) {
+            try {
+                const posicion = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, {
+                        enableHighAccuracy: true,
+                        timeout: 15000
+                    });
+                });
+                origen = { lat: posicion.coords.latitude, lon: posicion.coords.longitude };
+                etiquetaOrigen = "Tu ubicación";
+            } catch (error) {
+                alert("Activa la ubicación para trazar la ruta: " + error.message);
+                return;
+            }
+        } else {
+            const gad = municipioMasCercano(destinoLat, destinoLon);
+            origen = { lat: gad.lat, lon: gad.lon, nombre: gad.nombre };
+            etiquetaOrigen = `GAD Municipal de ${gad.nombre}`;
+            mostrarToast(`A cargo: GAD de ${gad.nombre}`);
+        }
+    }
+
+    capaRutas.clearLayers();
+
+    if (origen.nombre) {
+        marcarSalidaMunicipio(origen);
+    } else {
+        L.circleMarker([origen.lat, origen.lon], {
+            radius: 8,
+            fillColor: "#38bdf8",
+            color: "#fff",
+            weight: 2,
+            fillOpacity: 1
+        }).bindPopup(etiquetaOrigen).addTo(capaRutas);
+    }
+
+    L.circleMarker([destinoLat, destinoLon], {
+        radius: 9,
+        fillColor: "#22c55e",
+        color: "#fff",
+        weight: 2,
+        fillOpacity: 1
+    }).bindPopup("Punto del reporte").addTo(capaRutas);
+
+    const mostrarResumen = (texto, linea) => {
+        const caja = document.getElementById("infoRuta");
+        if (caja) {
+            caja.hidden = false;
+            caja.innerHTML = `<strong>Ruta del camión recolector</strong><p>${texto}</p><button type="button" onclick="limpiarRuta()">Quitar ruta</button>`;
+        }
+        if (linea) {
+            map.fitBounds(linea.getBounds(), { padding: [50, 50], maxZoom: 17 });
+        } else {
+            map.fitBounds([[origen.lat, origen.lon], [destinoLat, destinoLon]], { padding: [50, 50], maxZoom: 17 });
+        }
+    };
+
+    try {
+        const url = `https://router.project-osrm.org/route/v1/driving/${origen.lon},${origen.lat};${destinoLon},${destinoLat}?overview=full&geometries=geojson`;
+        const respuesta = await fetch(url);
+        const datos = await respuesta.json();
+        const ruta = datos.routes && datos.routes[0];
+        if (!ruta) throw new Error("Sin ruta");
+
+        const puntos = ruta.geometry.coordinates.map(([lon, lat]) => [lat, lon]);
+        const linea = L.polyline(puntos, {
+            color: "#16a34a",
+            weight: 6,
+            opacity: 0.9
+        }).addTo(capaRutas);
+
+        const kmNumero = ruta.distance / 1000;
+        const km = kmNumero.toFixed(1);
+        const camion = tiempoCamionRecolector(ruta.distance);
+        const textoTiempo = formatearMinutosRuta(camion.minutos);
+        mostrarResumen(
+            `${km} km · ${textoTiempo} en camión recolector<br><small>${origen.nombre ? `Sale del GAD de ${escaparHTML(origen.nombre)}. ` : ""}Velocidad promedio ${camion.velocidadKmh} km/h + ${camion.minutosAtencion} min de atención en el punto.</small>`,
+            linea
+        );
+        mostrarToast(`Ruta del camión: ${km} km · ${textoTiempo}`);
+    } catch (error) {
+        const linea = L.polyline([[origen.lat, origen.lon], [destinoLat, destinoLon]], {
+            color: "#f59e0b",
+            weight: 4,
+            dashArray: "8 8"
+        }).addTo(capaRutas);
+        mostrarResumen("No hubo calles disponibles. Se muestra una línea directa.", linea);
+        mostrarToast("Ruta aproximada (línea directa)");
+    }
+}
+
+function distanciaAproxKm(origen, reporte) {
+    return Math.hypot((origen.lat - Number(reporte.lat)) * 111, (origen.lon - Number(reporte.lon)) * 111);
+}
+
+function reportesPendientesParaRuta() {
+    const filtros = obtenerFiltros();
+    return reportesActuales.filter(reporte =>
+        ["Pendiente", "En revisión"].includes(reporte.estado) &&
+        Number.isFinite(Number(reporte.lat)) &&
+        Number.isFinite(Number(reporte.lon)) &&
+        (!filtros.tipo || reporte.tipo === filtros.tipo) &&
+        (!filtros.nivel || reporte.nivel === filtros.nivel) &&
+        (!filtros.sector || (reporte.sector || "").toLowerCase().includes(filtros.sector)) &&
+        (!filtros.criticos || prioridadReporte(reporte) === "Crítica") &&
+        (!filtros.mios || esAutorReporte(reporte))
+    );
+}
+
+function iconoParadaRuta(numero, color) {
+    return L.divIcon({
+        className: "marcador-parada",
+        html: `<span style="background:${color}">${numero}</span>`,
+        iconSize: [26, 26],
+        iconAnchor: [13, 13],
+        popupAnchor: [0, -12]
+    });
+}
+
+function mostrarCajaRuta(titulo, texto, linea, limites, listaHtml = "") {
+    const caja = document.getElementById("infoRuta");
+    if (caja) {
+        const abierto = window.innerWidth > 768 ? " open" : "";
+        caja.hidden = false;
+        caja.innerHTML = `<strong>${titulo}</strong><p>${texto}</p>${listaHtml ? `<details class="lista-paradas-ruta"${abierto}><summary>Ver paradas</summary>${listaHtml}</details>` : ""}<button type="button" onclick="limpiarRuta()">Quitar ruta</button>`;
+    }
+    if (linea) {
+        map.fitBounds(linea.getBounds(), { padding: [50, 50], maxZoom: 16 });
+    } else if (limites) {
+        map.fitBounds(limites, { padding: [50, 50], maxZoom: 16 });
+    }
+}
+
+window.trazarRutaRecoleccion = async function() {
+    if (!exigirAdministradorRutas()) return;
+    const maximo = Math.min(8, Math.max(2, Number(document.getElementById("maxParadasRuta")?.value) || 6));
+    const pendientes = reportesPendientesParaRuta();
+    if (!pendientes.length) {
+        return alert("No hay reportes pendientes para armar la ruta del camión.");
+    }
+
+    const cargo = municipioACargo(pendientes);
+    if (!cargo) {
+        return alert("No se pudo determinar el municipio a cargo.");
+    }
+
+    window.cerrarPanelHerramientas();
+    mostrarToast(`A cargo: GAD de ${cargo.municipio.nombre}`);
+
+    const origen = { lat: cargo.municipio.lat, lon: cargo.municipio.lon, nombre: cargo.municipio.nombre };
+    const elegidos = cargo.reportes
+        .slice()
+        .sort((a, b) => {
+            const criticoA = prioridadReporte(a) === "Crítica" ? 0 : 1;
+            const criticoB = prioridadReporte(b) === "Crítica" ? 0 : 1;
+            if (criticoA !== criticoB) return criticoA - criticoB;
+            return distanciaAproxKm(origen, a) - distanciaAproxKm(origen, b);
+        })
+        .slice(0, maximo);
+
+    if (elegidos.length === 1) {
+        await trazarRutaHasta(elegidos[0].lat, elegidos[0].lon, origen);
+        return;
+    }
+
+    capaRutas.clearLayers();
+    marcarSalidaMunicipio(origen);
+
+    const coords = [`${origen.lon},${origen.lat}`]
+        .concat(elegidos.map(reporte => `${Number(reporte.lon)},${Number(reporte.lat)}`))
+        .join(";");
+
+    let linea = null;
+    let metros = 0;
+    let ordenados = elegidos;
+
+    try {
+        const urlTrip = `https://router.project-osrm.org/trip/v1/driving/${coords}?roundtrip=false&source=first&destination=any&overview=full&geometries=geojson`;
+        const respuesta = await fetch(urlTrip);
+        const datos = await respuesta.json();
+        const viaje = datos.trips && datos.trips[0];
+        if (!viaje || !datos.waypoints) throw new Error("Sin viaje");
+
+        ordenados = datos.waypoints
+            .map((punto, indice) => ({ punto, indice }))
+            .filter(item => item.indice > 0)
+            .sort((a, b) => a.punto.waypoint_index - b.punto.waypoint_index)
+            .map(item => elegidos[item.indice - 1])
+            .filter(Boolean);
+
+        const puntos = viaje.geometry.coordinates.map(([lon, lat]) => [lat, lon]);
+        linea = L.polyline(puntos, { color: "#16a34a", weight: 6, opacity: 0.9 }).addTo(capaRutas);
+        metros = viaje.distance;
+    } catch (error) {
+        const puntosDirectos = [[origen.lat, origen.lon], ...ordenados.map(reporte => [Number(reporte.lat), Number(reporte.lon)])];
+        linea = L.polyline(puntosDirectos, { color: "#f59e0b", weight: 4, dashArray: "8 8" }).addTo(capaRutas);
+        metros = ordenados.reduce((total, reporte, indice) => {
+            const anterior = indice === 0 ? origen : ordenados[indice - 1];
+            return total + distanciaAproxKm(anterior, reporte) * 1000;
+        }, 0);
+    }
+
+    ordenados.forEach((reporte, indice) => {
+        const color = colorReporte(reporte);
+        L.marker([Number(reporte.lat), Number(reporte.lon)], {
+            icon: iconoParadaRuta(indice + 1, color),
+            zIndexOffset: 600
+        }).bindPopup(
+            `<b>Parada ${indice + 1}</b><br>${escaparHTML(codigoReporte(reporte))}<br>${escaparHTML(reporte.tipo)} · ${escaparHTML(reporte.sector)}<br><button class="btn-popup" type="button" onclick="verDetalleReporte('${reporte.id}')">Ver detalle</button>`
+        ).addTo(capaRutas);
+    });
+
+    const camion = tiempoCamionRecolector(metros, ordenados.length);
+    const km = (metros / 1000).toFixed(1);
+    const lista = `<ol>${ordenados.map(reporte => `<li>${escaparHTML(codigoReporte(reporte))} · ${escaparHTML(reporte.sector || "Sin sector")}${prioridadReporte(reporte) === "Crítica" ? " (crítico)" : ""}</li>`).join("")}</ol>`;
+    mostrarCajaRuta(
+        `Ruta GAD ${escaparHTML(origen.nombre)}`,
+        `${ordenados.length} paradas · ${km} km · ${formatearMinutosRuta(camion.minutos)}<br><small>A cargo: GAD Municipal de ${escaparHTML(origen.nombre)}. Sale del municipio más cercano.</small>`,
+        linea,
+        null,
+        lista
+    );
+    mostrarToast(`Ruta de ${origen.nombre}: ${ordenados.length} paradas · ${km} km`);
 }
 
 window.mostrarAutores = function(){
@@ -2373,6 +2964,11 @@ window.cerrarAutores = function(){
 }
 
 window.toggleExportar = function(){
+
+if (!esAdministrador()) {
+    alert("Solo el administrador puede exportar reportes.");
+    return;
+}
 
 let menu =
 document.getElementById("submenuExportar");
@@ -2537,12 +3133,17 @@ chat.scrollTop = chat.scrollHeight;
 
 <script>
 
+const movimientoReducido = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const equipoLimitado = (navigator.hardwareConcurrency || 4) <= 4
+    || (navigator.deviceMemory || 4) <= 4;
+
+if (!movimientoReducido && !equipoLimitado) {
 particlesJS("particles-js",{
 
 particles:{
 
 number:{
-value:80
+value:32
 },
 
 color:{
@@ -2571,7 +3172,7 @@ width:1
 
 move:{
 enable:true,
-speed:2
+speed:1
 }
 
 },
@@ -2580,7 +3181,7 @@ interactivity:{
 
 events:{
 onhover:{
-enable:true,
+enable:false,
 mode:"grab"
 }
 },
@@ -2596,15 +3197,117 @@ opacity:0.6
 
 },
 
-retina_detect:true
+retina_detect:false
 
 });
+}
 
 </script>
+
+<div id="bannerInstalarApp" class="banner-instalar-app" hidden>
+    <div>
+        <strong>Instalar en el celular</strong>
+        <p>Se agrega como ícono. El teléfono pedirá confirmar; es el permiso normal de Chrome, no una app de Play Store.</p>
+    </div>
+    <button type="button" onclick="instalarAppMovil()">Instalar</button>
+    <button type="button" class="boton-secundario" onclick="ocultarBannerInstalar(true)">Ahora no</button>
+</div>
+
+<div id="modalInstalarIos" class="modal-instalar-ios" hidden>
+    <div class="contenido-instalar-ios">
+        <h3>Instalar en iPhone</h3>
+        <ol>
+            <li>Toca el botón <b>Compartir</b> de Safari (el cuadrado con la flecha).</li>
+            <li>Elige <b>Agregar a pantalla de inicio</b>.</li>
+            <li>Confirma con <b>Agregar</b>.</li>
+        </ol>
+        <button type="button" onclick="cerrarModalInstalarIos()">Entendido</button>
+    </div>
+</div>
 
 <div id="notificacionBienvenida" class="notificacion-bienvenida">
     👋 Bienvenido
 </div>
+
+<script>
+const CLAVE_OCULTAR_INSTALAR = "siger-ocultar-instalar";
+let eventoInstalarApp = null;
+
+function esCelularPwa() {
+    return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+}
+
+function appYaInstalada() {
+    return window.matchMedia("(display-mode: standalone)").matches
+        || window.navigator.standalone === true;
+}
+
+function esIphoneSafari() {
+    return /iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
+function mostrarBannerInstalar() {
+    if (!esCelularPwa() || appYaInstalada() || localStorage.getItem(CLAVE_OCULTAR_INSTALAR)) return;
+    const banner = document.getElementById("bannerInstalarApp");
+    const botonLogin = document.getElementById("btnInstalarLogin");
+    if (banner) banner.hidden = false;
+    if (botonLogin) botonLogin.hidden = false;
+}
+
+window.ocultarBannerInstalar = function(guardar) {
+    const banner = document.getElementById("bannerInstalarApp");
+    if (banner) banner.hidden = true;
+    if (guardar) localStorage.setItem(CLAVE_OCULTAR_INSTALAR, "1");
+};
+
+window.cerrarModalInstalarIos = function() {
+    const modal = document.getElementById("modalInstalarIos");
+    if (modal) modal.hidden = true;
+};
+
+window.instalarAppMovil = async function() {
+    if (!esCelularPwa()) {
+        alert("Esta instalación es solo para celular. Ábrela desde el teléfono.");
+        return;
+    }
+    if (appYaInstalada()) {
+        alert("Ya está instalada en este celular.");
+        return;
+    }
+    if (eventoInstalarApp) {
+        eventoInstalarApp.prompt();
+        const eleccion = await eventoInstalarApp.userChoice;
+        eventoInstalarApp = null;
+        if (eleccion.outcome === "accepted") ocultarBannerInstalar(true);
+        return;
+    }
+    if (esIphoneSafari()) {
+        document.getElementById("modalInstalarIos").hidden = false;
+        return;
+    }
+    alert("En Chrome o Edge del celular abre el menú (⋮) y elige Instalar aplicación.");
+};
+
+window.addEventListener("beforeinstallprompt", function(evento) {
+    evento.preventDefault();
+    eventoInstalarApp = evento;
+    mostrarBannerInstalar();
+});
+
+window.addEventListener("appinstalled", function() {
+    ocultarBannerInstalar(true);
+});
+
+if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("./sw.js");
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    const botonLogin = document.getElementById("btnInstalarLogin");
+    if (botonLogin) botonLogin.hidden = !esCelularPwa() || appYaInstalada();
+    mostrarBannerInstalar();
+});
+</script>
 
 </body>
 
