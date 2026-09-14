@@ -922,7 +922,14 @@ onAuthStateChanged(auth, async (user) => {
     document.body.classList.remove("login-activo");
     aplicarPermisosRuta(user);
 
-    if (!user) await asegurarSesionPublica();
+    if (!user) {
+        await asegurarSesionPublica();
+    } else {
+        // Al cambiar entre ciudadano y administrador también debe cambiar la
+        // consulta: el ciudadano recibe solo sus documentos y el administrador
+        // conserva la vista general.
+        iniciarEscuchaReportes(true);
+    }
 });
 
 document.getElementById("password")?.addEventListener("keydown", evento => {
@@ -1834,20 +1841,26 @@ const configuracionApartados = {
     activos: {
         titulo: "📋 Reportes activos",
         descripcion: "Reportes pendientes o que se encuentran en revisión.",
+        descripcionCiudadano: "Tus reportes pendientes o que se encuentran en revisión.",
         estados: ["Pendiente", "En revisión"],
-        vacio: "No hay reportes activos en este momento."
+        vacio: "No hay reportes activos en este momento.",
+        vacioCiudadano: "No tienes reportes activos en este momento."
     },
     atendidos: {
         titulo: "✅ Reportes atendidos",
         descripcion: "Reportes que ya fueron solucionados o atendidos.",
+        descripcionCiudadano: "Tus reportes que ya fueron solucionados o atendidos.",
         estados: ["Atendido"],
-        vacio: "Todavía no hay reportes atendidos."
+        vacio: "Todavía no hay reportes atendidos.",
+        vacioCiudadano: "Todavía no tienes reportes atendidos."
     },
     descartados: {
         titulo: "🚫 Reportes descartados",
         descripcion: "Reportes inválidos, duplicados o que no requieren atención.",
+        descripcionCiudadano: "Tus reportes que fueron descartados por ser inválidos, duplicados o no requerir atención.",
         estados: ["Descartado"],
-        vacio: "No hay reportes descartados."
+        vacio: "No hay reportes descartados.",
+        vacioCiudadano: "No tienes reportes descartados."
     }
 };
 
@@ -1923,6 +1936,7 @@ function aplicarFiltros() {
     const filtros = obtenerFiltros();
     const apartado = configuracionApartados[apartadoReportesActual];
     const visibles = reportesActuales.filter(reporte =>
+        (esAdministrador() || esAutorReporte(reporte)) &&
         apartado.estados.includes(reporte.estado) &&
         (!filtros.tipo || reporte.tipo === filtros.tipo) &&
         (!filtros.nivel || reporte.nivel === filtros.nivel) &&
@@ -1933,6 +1947,17 @@ function aplicarFiltros() {
     );
     renderizarReportes(visibles);
     actualizarSelectorGadRuta();
+}
+
+function actualizarEncabezadoApartado() {
+    const configuracion = configuracionApartados[apartadoReportesActual];
+    const ciudadano = !esAdministrador();
+    document.getElementById("tituloListadoReportes").textContent = ciudadano
+        ? configuracion.titulo.replace("Reportes", "Mis reportes")
+        : configuracion.titulo;
+    document.getElementById("descripcionApartado").textContent = ciudadano
+        ? configuracion.descripcionCiudadano
+        : configuracion.descripcion;
 }
 
 window.limpiarFiltros = function() {
@@ -1962,8 +1987,7 @@ window.cambiarApartadoReportes = function(apartado) {
     apartadoReportesActual = apartado;
     const configuracion = configuracionApartados[apartado];
 
-    document.getElementById("tituloListadoReportes").textContent = configuracion.titulo;
-    document.getElementById("descripcionApartado").textContent = configuracion.descripcion;
+    actualizarEncabezadoApartado();
     document.querySelectorAll(".tab-reporte").forEach(boton => {
         const seleccionado = boton.dataset.apartado === apartado;
         boton.classList.toggle("activo", seleccionado);
@@ -1985,7 +2009,9 @@ function renderizarReportes(reportes) {
     capaReportes.clearLayers();
 
     if(!reportes.length){
-        tabla.innerHTML = `<tr><td class="tabla-vacia" colspan="10">${configuracionApartados[apartadoReportesActual].vacio}</td></tr>`;
+        const configuracion = configuracionApartados[apartadoReportesActual];
+        const mensaje = esAdministrador() ? configuracion.vacio : configuracion.vacioCiudadano;
+        tabla.innerHTML = `<tr><td class="tabla-vacia" colspan="10">${mensaje}</td></tr>`;
         return;
     }
 
@@ -2100,7 +2126,12 @@ function aplicarSnapshotReportes(snapshot) {
     // cambió, conservamos la tabla, los marcadores y los gráficos existentes.
     if (firmaNueva === firmaUltimosReportes) return false;
     firmaUltimosReportes = firmaNueva;
-    reportesActuales = snapshot.docs.map(documento => ({ id: documento.id, estado: "Pendiente", ...documento.data() }));
+    const recibidos = snapshot.docs.map(documento => ({ id: documento.id, estado: "Pendiente", ...documento.data() }));
+    // Defensa adicional de privacidad en la interfaz, incluso si una consulta
+    // antigua permaneciera activa durante un cambio de sesión.
+    reportesActuales = esAdministrador()
+        ? recibidos
+        : recibidos.filter(reporte => esAutorReporte(reporte));
     actualizarContadoresApartados();
     aplicarFiltros();
     actualizarEstadisticas();
@@ -2114,8 +2145,20 @@ async function cargarReportes() {
 function iniciarEscuchaReportes(forzar = false) {
     if (cancelarEscuchaReportes && !forzar) return;
     if (cancelarEscuchaReportes) cancelarEscuchaReportes();
-    const dia = esAdministrador() ? document.getElementById('filtroFechaDesde').value || diaEcuador() : diaEcuador();
-    document.getElementById('filtroFechaDesde').value = dia;
+    cancelarEscuchaReportes = null;
+    const usuario = auth.currentUser;
+    if (!usuario) {
+        reportesActuales = [];
+        actualizarContadoresApartados();
+        actualizarEncabezadoApartado();
+        aplicarFiltros();
+        actualizarEstadisticas();
+        return;
+    }
+
+    const admin = esAdministrador(usuario);
+    const dia = admin ? document.getElementById('filtroFechaDesde').value || diaEcuador() : diaEcuador();
+    if (admin) document.getElementById('filtroFechaDesde').value = dia;
     const inicio = new Date(`${dia}T00:00:00-05:00`);
     const fin = new Date(inicio.getTime() + 86400000);
     reportesActuales = [];
@@ -2123,10 +2166,16 @@ function iniciarEscuchaReportes(forzar = false) {
     actualizarContadoresApartados();
     aplicarFiltros();
     actualizarEstadisticas();
-    document.getElementById('diaReportesVisible').textContent = inicio.toLocaleDateString('es-EC', { timeZone: 'America/Guayaquil', day: 'numeric', month: 'long', year: 'numeric' });
+    actualizarEncabezadoApartado();
+    document.getElementById('diaReportesVisible').textContent = admin
+        ? inicio.toLocaleDateString('es-EC', { timeZone: 'America/Guayaquil', day: 'numeric', month: 'long', year: 'numeric' })
+        : 'Solo los reportes enviados desde este dispositivo';
     const version = ++versionConsultaDia;
+    const consultaReportes = admin
+        ? query(collection(db, "reportes"), where('fecha', '>=', inicio), where('fecha', '<', fin))
+        : query(collection(db, "reportes"), where('uidAutor', '==', usuario.uid));
     cancelarEscuchaReportes = onSnapshot(
-        query(collection(db, "reportes"), where('fecha', '>=', inicio), where('fecha', '<', fin)),
+        consultaReportes,
         snapshot => { if (version === versionConsultaDia) aplicarSnapshotReportes(snapshot); },
         error => {
             if (version !== versionConsultaDia) return;
