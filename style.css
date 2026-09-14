@@ -515,10 +515,11 @@ button:hover{
 
 .bloque-ruta-recoleccion{
     margin:16px 0 12px;
-    padding:12px;
-    border-radius:14px;
+    padding:20px;
+    border-radius:20px;
     border:1px solid rgba(74,222,128,.3);
-    background:rgba(15,23,42,.45);
+    background:linear-gradient(145deg,#152e32,#111e30);
+    box-shadow:0 8px 24px rgba(0,0,0,.15);
 }
 
 .bloque-ruta-recoleccion h3{
@@ -529,7 +530,19 @@ button:hover{
     margin:0 0 8px;
     font-size:13px;
     color:#cbd5e1;
+    line-height:1.6;
 }
+
+.ruta-campos{display:grid;gap:14px;margin:18px 0;min-width:0;}
+.ruta-campo{min-width:0;}
+.ruta-campo label{display:block;margin:0 0 8px;font-size:12px;font-weight:700;color:#b6d9d0;}
+.ruta-campo select{box-sizing:border-box;width:100%;max-width:100%;min-height:48px;margin:0;padding:12px;border:1px solid #42605f;border-radius:12px;background:#20343e;color:#f1f5f9;font:inherit;font-size:14px;text-overflow:ellipsis;}
+.ruta-campo select:focus-visible{outline:2px solid #6ee7b7;outline-offset:3px;}
+.ruta-campo select:disabled{opacity:.6;}
+.bloque-ruta-recoleccion > button{width:100%;min-height:48px;margin:0;border-radius:12px;background:#6ee7b7;color:#102a25;font-size:14px;font-weight:700;box-shadow:none;}
+.bloque-ruta-recoleccion > button:hover{background:#a7f3d0;}
+.ruta-nota{display:block;margin-top:12px;font-size:11px;line-height:1.5;color:#9db5bc;}
+#estadoAvisosAdmin[hidden]{display:none !important;}
 
 body.es-ciudadano .bloque-ruta-recoleccion{
     display:none;

@@ -293,14 +293,25 @@ multiple>
 
         <section class="bloque-ruta-recoleccion solo-admin">
             <h3>🚛 Ruta de recolección</h3>
-            <p>El municipio más cercano a los reportes se hace cargo. La ruta sale de ese GAD, no solo de Quevedo.</p>
+            <p>Elige el municipio y organiza las paradas del día consultado.</p>
+            <div class="ruta-campos">
+            <div class="ruta-campo">
+            <label class="etiqueta-fecha" for="gadRutaRecoleccion">GAD de salida</label>
+            <select id="gadRutaRecoleccion">
+                <option value="">Selecciona un GAD con reportes pendientes</option>
+            </select>
+            </div>
+            <div class="ruta-campo">
             <label class="etiqueta-fecha" for="maxParadasRuta">Paradas</label>
             <select id="maxParadasRuta">
                 <option value="4">4 paradas</option>
                 <option value="6" selected>6 paradas</option>
                 <option value="8">8 paradas</option>
             </select>
+            </div>
+            </div>
             <button type="button" onclick="trazarRutaRecoleccion()">Trazar ruta de recolección</button>
+            <small class="ruta-nota">Puntos agrupados por cercanía al GAD, no por límites cantonales.</small>
         </section>
 
         <button onclick="abrirAnalisis()">📊 Ver Análisis Ambiental</button>
@@ -888,7 +899,7 @@ onAuthStateChanged(auth, async (user) => {
     const rol = document.getElementById("rolUsuario");
     const botonAcceso = document.getElementById("btnAccesoAdministrador");
     const botonSalir = document.getElementById("btnCerrarSesion");
-    document.getElementById('estadoAvisosAdmin').hidden = !admin;
+    document.getElementById('estadoAvisosAdmin').hidden = true;
     if (!admin) detenerAvisosAdmin();
     else iniciarAvisosAdmin();
 
@@ -1920,6 +1931,7 @@ function aplicarFiltros() {
         (!filtros.mios || esAutorReporte(reporte))
     );
     renderizarReportes(visibles);
+    actualizarSelectorGadRuta();
 }
 
 window.limpiarFiltros = function() {
@@ -2752,7 +2764,7 @@ function municipioMasCercano(lat, lon) {
     return { ...mejor, distanciaKm: menor };
 }
 
-function municipioACargo(reportes) {
+function gruposMunicipiosRuta(reportes) {
     const grupos = new Map();
     for (const reporte of reportes) {
         const gad = municipioMasCercano(reporte.lat, reporte.lon);
@@ -2760,12 +2772,22 @@ function municipioACargo(reportes) {
         if (!grupos.has(clave)) grupos.set(clave, { municipio: gad, reportes: [] });
         grupos.get(clave).reportes.push(reporte);
     }
-    return [...grupos.values()].sort((a, b) => {
-        if (b.reportes.length !== a.reportes.length) return b.reportes.length - a.reportes.length;
-        const distA = a.reportes.reduce((suma, reporte) => suma + distanciaAproxKm(a.municipio, reporte), 0);
-        const distB = b.reportes.reduce((suma, reporte) => suma + distanciaAproxKm(b.municipio, reporte), 0);
-        return distA - distB;
-    })[0];
+    return [...grupos.entries()].map(([clave, grupo]) => ({ clave, ...grupo }))
+        .sort((a, b) => a.municipio.nombre.localeCompare(b.municipio.nombre, "es"));
+}
+
+function actualizarSelectorGadRuta() {
+    const selector = document.getElementById("gadRutaRecoleccion");
+    const anterior = selector.value;
+    const grupos = gruposMunicipiosRuta(reportesPendientesParaRuta());
+    selector.replaceChildren(new Option(grupos.length
+        ? "Selecciona un GAD con reportes pendientes"
+        : "No hay puntos pendientes con estos filtros", ""));
+    for (const grupo of grupos) {
+        selector.add(new Option(`${grupo.municipio.nombre} (${grupo.municipio.provincia || "Ecuador"}) · ${grupo.reportes.length} puntos`, grupo.clave));
+    }
+    if (grupos.some(grupo => grupo.clave === anterior)) selector.value = anterior;
+    selector.disabled = !grupos.length;
 }
 
 function marcarSalidaMunicipio(municipio) {
@@ -3013,9 +3035,12 @@ window.trazarRutaRecoleccion = async function() {
         return alert("No hay reportes pendientes para armar la ruta del camión.");
     }
 
-    const cargo = municipioACargo(pendientes);
+    const seleccionado = document.getElementById("gadRutaRecoleccion").value;
+    const cargo = gruposMunicipiosRuta(pendientes).find(grupo => grupo.clave === seleccionado);
     if (!cargo) {
-        return alert("No se pudo determinar el municipio a cargo.");
+        actualizarSelectorGadRuta();
+        document.getElementById("gadRutaRecoleccion").focus();
+        return alert("Selecciona el GAD de salida antes de trazar la ruta.");
     }
 
     window.cerrarPanelHerramientas();
@@ -3089,7 +3114,7 @@ window.trazarRutaRecoleccion = async function() {
     const lista = `<ol>${ordenados.map(reporte => `<li>${escaparHTML(codigoReporte(reporte))} · ${escaparHTML(reporte.sector || "Sin sector")}${prioridadReporte(reporte) === "Crítica" ? " (crítico)" : ""}</li>`).join("")}</ol>`;
     mostrarCajaRuta(
         `Ruta GAD ${escaparHTML(origen.nombre)}`,
-        `${ordenados.length} paradas · ${km} km · ${formatearMinutosRuta(camion.minutos)}<br><small>A cargo: GAD Municipal de ${escaparHTML(origen.nombre)}. Sale del municipio más cercano.</small>`,
+        `${ordenados.length} paradas · ${km} km · ${formatearMinutosRuta(camion.minutos)}<br><small>Salida elegida: GAD Municipal de ${escaparHTML(origen.nombre)}.</small>`,
         linea,
         null,
         lista
