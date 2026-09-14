@@ -202,8 +202,9 @@ placeholder="Ingrese sector o barrio">
 <input
 type="file"
 id="imagenes"
-accept="image/*"
+accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
 multiple>
+<p id="estadoFotos" role="status" aria-live="polite">Máximo 3 fotos. Hasta 20 MB por original; se comprimen a 500 KB o menos antes de enviarse.</p>
 
 <div id="vistaPrevia"></div>
 
@@ -218,20 +219,22 @@ multiple>
     <option>Alto</option>
 </select>
 
-<section class="panel-consulta" aria-label="Consultar reporte">
+<section class="panel-consulta solo-admin-reportes" aria-label="Consultar reporte" hidden>
     <h3>🔎 Consultar reporte</h3>
     <input id="consultaReporte" type="search" placeholder="Código RM, sector o reportante">
     <button class="boton-secundario" type="button" onclick="consultarReporte()">Buscar</button>
 </section>
 
-<section class="panel-filtros" aria-label="Filtros de reportes">
+<section class="panel-filtros solo-admin-reportes" aria-label="Filtros de reportes" hidden>
     <h3>🔎 Filtrar reportes</h3>
     <select id="filtroTipo"><option value="">Todos los residuos</option><option>Orgánico</option><option>Inorgánico</option><option>Reciclable</option><option>Peligroso</option></select>
     <select id="filtroNivel"><option value="">Todos los niveles</option><option>Bajo</option><option>Medio</option><option>Alto</option></select>
     <select id="filtroEstado"><option value="">Todos los estados</option><option>Pendiente</option><option>En revisión</option><option>Atendido</option><option>Descartado</option></select>
     <input id="filtroSector" type="search" placeholder="Buscar sector o barrio">
-    <label class="etiqueta-fecha" for="filtroFechaDesde">Desde</label>
+    <label class="etiqueta-fecha" for="filtroFechaDesde">Día de los reportes (hora de Ecuador)</label>
     <input id="filtroFechaDesde" type="date">
+    <p>Selecciona una fecha para consultar sus reportes. La búsqueda se realiza en ese día.</p>
+    <button class="boton-secundario" type="button" onclick="volverReportesHoy()">Ver hoy</button>
     <label class="filtro-check"><input id="filtroCriticos" type="checkbox"> Mostrar solo puntos críticos</label>
     <label class="filtro-check"><input id="filtroMios" type="checkbox"> Ver solo mis reportes</label>
     <button class="boton-secundario" type="button" onclick="limpiarFiltros()">Limpiar filtros</button>
@@ -251,7 +254,7 @@ multiple>
 
 <!-- MAPA -->
 <div class="envoltorio-mapa">
-    <div class="cabecera-mapa">MAPA DE REPORTES EN TIEMPO REAL</div>
+    <div class="cabecera-mapa"><span class="titulo-cabecera-mapa">Reportes del día</span><span class="zona-cabecera-mapa">Hora de Ecuador</span></div>
     <div id="map"></div>
     <div class="leyenda-mapa" aria-label="Leyenda del mapa">
         <span><i class="punto organico"></i> Orgánico</span>
@@ -605,6 +608,7 @@ Aprende conceptos importantes sobre residuos y cuidado ambiental 🌎
     <script src="gad-ecuador.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+    <script src="fotos-reportes.js"></script>
     <script type="module">
 
 function mostrarToast(mensaje){
@@ -638,6 +642,8 @@ getFirestore,
 collection,
 addDoc,
 getDocs,
+query,
+where,
 onSnapshot,
 updateDoc,
 deleteDoc,
@@ -735,6 +741,8 @@ function esAutorReporte(reporte, usuario = auth.currentUser) {
 function aplicarPermisosRuta(usuario = auth.currentUser) {
     const esAdmin = esAdministrador(usuario);
     document.body.classList.toggle("es-admin", esAdmin);
+    document.querySelectorAll('.solo-admin-reportes').forEach(panel => { panel.hidden = !esAdmin; });
+    if (!esAdmin && typeof volverReportesHoy === 'function') window.volverReportesHoy();
     document.body.classList.toggle("es-ciudadano", Boolean(usuario) && !esAdmin);
     if (!esAdmin && typeof limpiarRuta === "function") limpiarRuta();
     try {
@@ -1883,6 +1891,7 @@ function crearMarcadorReporte(reporte) {
 }
 
 function obtenerFiltros() {
+    if (!esAdministrador()) return {};
     return {
         tipo: document.getElementById("filtroTipo").value,
         nivel: document.getElementById("filtroNivel").value,
@@ -1903,7 +1912,6 @@ function aplicarFiltros() {
         (!filtros.nivel || reporte.nivel === filtros.nivel) &&
         (!filtros.estado || reporte.estado === filtros.estado) &&
         (!filtros.sector || (reporte.sector || "").toLowerCase().includes(filtros.sector)) &&
-        (!filtros.fecha || fechaReporte(reporte) >= new Date(`${filtros.fecha}T00:00:00`)) &&
         (!filtros.criticos || prioridadReporte(reporte) === "Crítica") &&
         (!filtros.mios || esAutorReporte(reporte))
     );
@@ -1911,13 +1919,14 @@ function aplicarFiltros() {
 }
 
 window.limpiarFiltros = function() {
-    ["filtroTipo", "filtroNivel", "filtroEstado", "filtroSector", "filtroFechaDesde"].forEach(id => document.getElementById(id).value = "");
+    ["filtroTipo", "filtroNivel", "filtroEstado", "filtroSector"].forEach(id => document.getElementById(id).value = "");
     document.getElementById("filtroCriticos").checked = false;
     document.getElementById("filtroMios").checked = false;
     aplicarFiltros();
 };
 
 window.consultarReporte = function() {
+    if (!esAdministrador()) return;
     const consulta = document.getElementById("consultaReporte").value.trim().toLowerCase();
     if (!consulta) return alert("Escribe un código, sector o correo.");
     const encontrado = reportesActuales.find(reporte =>
@@ -2007,16 +2016,29 @@ function aplicarSnapshotReportes(snapshot) {
 }
 
 async function cargarReportes() {
-    const snapshot = await getDocs(collection(db, "reportes"));
-    return aplicarSnapshotReportes(snapshot);
+    iniciarEscuchaReportes();
 }
 
-function iniciarEscuchaReportes() {
-    if (cancelarEscuchaReportes) return;
+function iniciarEscuchaReportes(forzar = false) {
+    if (cancelarEscuchaReportes && !forzar) return;
+    if (cancelarEscuchaReportes) cancelarEscuchaReportes();
+    const dia = esAdministrador() ? document.getElementById('filtroFechaDesde').value || diaEcuador() : diaEcuador();
+    document.getElementById('filtroFechaDesde').value = dia;
+    const inicio = new Date(`${dia}T00:00:00-05:00`);
+    const fin = new Date(inicio.getTime() + 86400000);
+    reportesActuales = [];
+    firmaUltimosReportes = null;
+    actualizarContadoresApartados();
+    aplicarFiltros();
+    actualizarEstadisticas();
+    document.getElementById('diaReportesVisible').textContent = inicio.toLocaleDateString('es-EC', { timeZone: 'America/Guayaquil', day: 'numeric', month: 'long', year: 'numeric' });
+    const version = ++versionConsultaDia;
     cancelarEscuchaReportes = onSnapshot(
-        collection(db, "reportes"),
-        aplicarSnapshotReportes,
+        query(collection(db, "reportes"), where('fecha', '>=', inicio), where('fecha', '<', fin)),
+        snapshot => { if (version === versionConsultaDia) aplicarSnapshotReportes(snapshot); },
         error => {
+            if (version !== versionConsultaDia) return;
+            document.getElementById('diaReportesVisible').textContent += ' · No se pudo cargar. Selecciona la fecha para reintentar.';
             console.warn("La actualización en tiempo real se interrumpió:", error);
             mostrarToast("La información se actualizará al realizar la próxima acción.");
         }
@@ -2100,12 +2122,29 @@ window.actualizarEstadoReporte = async function(id, estado) {
 };
 
 function actualizarProgresoCarga(indice, total) { const caja = document.getElementById("progresoCarga"); caja.hidden = false; document.getElementById("barraProgreso").style.width = `${Math.round(indice * 100 / total)}%`; document.getElementById("textoProgreso").textContent = `Subiendo fotografía ${indice} de ${total}...`; }
-async function subirImagenesASupabase(imagenes) { const urls=[]; const cliente = await obtenerClienteSupabase(); for (let i=0; i<imagenes.length; i++) { const imagen=imagenes[i]; if(!imagen.type.startsWith("image/") || imagen.size > 5 * 1024 * 1024) throw new Error("Cada fotografía debe ser una imagen de máximo 5 MB."); actualizarProgresoCarga(i, imagenes.length); const ruta=`reportes/${Date.now()}-${crypto.randomUUID()}.${imagen.name.split(".").pop() || "jpg"}`; const {error}=await cliente.storage.from(BUCKET_FOTOS).upload(ruta, imagen,{contentType:imagen.type,upsert:false}); if(error) throw error; urls.push(cliente.storage.from(BUCKET_FOTOS).getPublicUrl(ruta).data.publicUrl); actualizarProgresoCarga(i+1, imagenes.length); } return urls; }
+async function subirImagenesASupabase(imagenes) {
+    imagenes = imagenes.slice();
+    if (imagenes.length > 3) throw new Error('Máximo 3 fotos por reporte.');
+    if (imagenes.some(imagen => imagen.type !== 'image/jpeg' || imagen.size > FotosReportes.maxSalida)) throw new Error('Selecciona nuevamente las fotos para comprimirlas.');
+    const urls = [];
+    if (!imagenes.length) return urls;
+    const cliente = await obtenerClienteSupabase();
+    for (let i = 0; i < imagenes.length; i++) {
+        actualizarProgresoCarga(i, imagenes.length);
+        const ruta = `reportes/${Date.now()}-${crypto.randomUUID()}.jpg`;
+        const { error } = await cliente.storage.from(BUCKET_FOTOS).upload(ruta, imagenes[i], { contentType: 'image/jpeg', upsert: false });
+        if (error) throw error;
+        urls.push(cliente.storage.from(BUCKET_FOTOS).getPublicUrl(ruta).data.publicUrl);
+        actualizarProgresoCarga(i + 1, imagenes.length);
+    }
+    return urls;
+}
 
 window.mostrarConfirmacionReporte = datos => new Promise(resolve => { resolverConfirmacion = resolve; document.getElementById("contenidoConfirmacion").innerHTML = `<p><b>Reportante:</b> ${escaparHTML(datos.reportante)}</p><p><b>Tipo:</b> ${escaparHTML(datos.tipo)}${datos.subtipo ? ` · ${escaparHTML(datos.subtipo)}` : ""}</p><p><b>Sector:</b> ${escaparHTML(datos.sector)}</p><p><b>Nivel:</b> ${escaparHTML(datos.nivel)}</p><p><b>Ubicación:</b> ${datos.lat.toFixed(5)}, ${datos.lon.toFixed(5)}</p><p><b>Fotografías:</b> ${datos.fotos} seleccionada(s)</p>`; document.getElementById("modalConfirmacion").hidden = false; });
 window.resolverConfirmacionReporte = aceptar => { document.getElementById("modalConfirmacion").hidden = true; resolverConfirmacion?.(aceptar); resolverConfirmacion = null; };
 
 window.obtenerUbicacion = async function() {
+    if (procesandoFotos) return alert('Espera a que termine la preparación de las fotos.');
     const usuario = auth.currentUser || await asegurarSesionPublica();
     if (!usuario) return alert("No se pudo preparar el envío público. Actualiza la página e inténtalo nuevamente.");
     const nombreReportante = document.getElementById("nombreReportante").value.trim();
@@ -2142,7 +2181,35 @@ window.obtenerUbicacion = async function() {
     }
 };
 
-["filtroTipo","filtroNivel","filtroEstado","filtroFechaDesde","filtroCriticos","filtroMios"].forEach(id => document.getElementById(id).addEventListener("change", aplicarFiltros));
+["filtroTipo","filtroNivel","filtroEstado","filtroCriticos","filtroMios"].forEach(id => document.getElementById(id).addEventListener("change", aplicarFiltros));
+let versionConsultaDia = 0;
+function diaEcuador() {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Guayaquil', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+}
+document.getElementById('filtroFechaDesde').value = diaEcuador();
+const etiquetaDia = document.createElement('p');
+etiquetaDia.id = 'diaReportesVisible';
+etiquetaDia.setAttribute('role', 'status');
+document.querySelector('.cabecera-mapa').append(etiquetaDia);
+window.volverReportesHoy = function() {
+    const campo = document.getElementById('filtroFechaDesde');
+    campo.value = diaEcuador();
+    if (cancelarEscuchaReportes) iniciarEscuchaReportes(true);
+};
+document.getElementById('filtroFechaDesde').addEventListener('change', () => {
+    if (!esAdministrador()) return;
+    iniciarEscuchaReportes(true);
+});
+let ultimoDiaEcuador = diaEcuador();
+function comprobarCambioDia() {
+    const hoy = diaEcuador();
+    if (hoy === ultimoDiaEcuador) return;
+    const seguiaHoy = document.getElementById('filtroFechaDesde').value === ultimoDiaEcuador;
+    ultimoDiaEcuador = hoy;
+    if (seguiaHoy || !esAdministrador()) window.volverReportesHoy();
+}
+setInterval(comprobarCambioDia, 30000);
+document.addEventListener('visibilitychange', comprobarCambioDia);
 const CLASIFICACION_RESIDUOS = {
     "Orgánico": ["Restos de comida", "Jardín y poda", "Madera", "Otro orgánico"],
     "Inorgánico": ["Plástico no reciclable", "Tecnopor", "Textiles", "Otro inorgánico"],
@@ -2993,6 +3060,34 @@ let imagenesSeleccionadas = [];
 
 const inputImagenes = document.getElementById("imagenes");
 
+let procesandoFotos = false;
+inputImagenes.addEventListener("change", async function(){
+    if (procesandoFotos) return;
+    const archivos = Array.from(this.files);
+    this.value = '';
+    if (imagenesSeleccionadas.length + archivos.length > FotosReportes.maxFotos) {
+        alert('Puedes adjuntar como máximo 3 fotos por reporte. Elimina alguna antes de agregar más.');
+        return;
+    }
+    procesandoFotos = true;
+    this.disabled = true;
+    const estado = document.getElementById('estadoFotos');
+    try {
+        for (let i = 0; i < archivos.length; i++) {
+            estado.textContent = `Preparando foto ${i + 1} de ${archivos.length}…`;
+            imagenesSeleccionadas.push(await FotosReportes.comprimir(archivos[i]));
+        }
+        estado.textContent = `${imagenesSeleccionadas.length} foto(s) preparada(s). Máximo 500 KB por foto.`;
+    } catch (error) {
+        estado.textContent = error.message;
+    } finally {
+        procesandoFotos = false;
+        this.disabled = false;
+        mostrarVistaPrevia();
+    }
+});
+
+/* Selección procesada arriba antes de guardar las fotos.
 inputImagenes.addEventListener("change", function(){
 
     for(const archivo of this.files){
@@ -3007,6 +3102,7 @@ inputImagenes.addEventListener("change", function(){
 
 });
 
+*/
 function mostrarVistaPrevia(){
 
     const vista = document.getElementById("vistaPrevia");
@@ -3046,6 +3142,7 @@ function mostrarVistaPrevia(){
 }
 
 window.eliminarImagen = function(indice){
+    if (procesandoFotos) return;
 
     imagenesSeleccionadas.splice(indice,1);
 

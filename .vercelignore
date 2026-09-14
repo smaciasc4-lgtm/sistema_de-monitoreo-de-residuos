@@ -1,0 +1,6 @@
+android/
+node_modules/
+*.md
+*.sql
+.env*
+.git/

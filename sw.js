@@ -1,9 +1,10 @@
-const CACHE = "residuos-app-v2";
+const CACHE = "residuos-app-v3";
 const ASSETS = [
     "./",
     "./index.html",
     "./style.css",
     "./gad-ecuador.js",
+    "./fotos-reportes.js",
     "./manifest.webmanifest",
     "./icon.svg"
 ];
