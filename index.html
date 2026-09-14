@@ -74,6 +74,7 @@
                 </div>
             </div>
 
+            <span id="estadoAvisosAdmin" role="status" aria-live="polite" hidden></span>
             <button id="btnCerrarSesion" class="btn-salir-header" type="button" onclick="cerrarSesion()" hidden>
                 🚪 Salir
             </button>
@@ -887,6 +888,9 @@ onAuthStateChanged(auth, async (user) => {
     const rol = document.getElementById("rolUsuario");
     const botonAcceso = document.getElementById("btnAccesoAdministrador");
     const botonSalir = document.getElementById("btnCerrarSesion");
+    document.getElementById('estadoAvisosAdmin').hidden = !admin;
+    if (!admin) detenerAvisosAdmin();
+    else iniciarAvisosAdmin();
 
     if (admin) {
         window.cerrarAccesoAdministrador();
@@ -1997,6 +2001,81 @@ function renderizarReportes(reportes) {
         capaReportes.addLayer(marcador);
     });
 }
+
+var audioAvisosAdmin = null;
+var cancelarAvisosAdmin = null;
+var versionAvisosAdmin = 0;
+function detenerAvisosAdmin() {
+    versionAvisosAdmin++;
+    if (cancelarAvisosAdmin) cancelarAvisosAdmin();
+    cancelarAvisosAdmin = null;
+    if (audioAvisosAdmin) audioAvisosAdmin.close().catch(() => {});
+    audioAvisosAdmin = null;
+    document.getElementById('estadoAvisosAdmin').textContent = '';
+}
+function sonarAvisoAdmin() {
+    if (!esAdministrador() || !audioAvisosAdmin) return;
+    const ctx = audioAvisosAdmin;
+    return ctx.resume().then(() => {
+        if (!esAdministrador() || ctx.state !== 'running') return;
+        [660, 880].forEach((frecuencia, i) => {
+            const oscilador = ctx.createOscillator();
+            const volumen = ctx.createGain();
+            const inicio = ctx.currentTime + i * .22;
+            oscilador.frequency.value = frecuencia;
+            volumen.gain.setValueAtTime(0, inicio);
+            volumen.gain.linearRampToValueAtTime(.12, inicio + .02);
+            volumen.gain.exponentialRampToValueAtTime(.001, inicio + .18);
+            oscilador.connect(volumen); volumen.connect(ctx.destination);
+            oscilador.start(inicio); oscilador.stop(inicio + .2);
+        });
+    }).catch(() => {});
+}
+function iniciarAvisosAdmin() {
+    if (!esAdministrador()) return;
+    if (cancelarAvisosAdmin) return;
+    try {
+        const Audio = window.AudioContext || window.webkitAudioContext;
+        if (!Audio) throw new Error('Este navegador no admite sonido.');
+        if (Audio && !audioAvisosAdmin) audioAvisosAdmin = new Audio();
+        if (!esAdministrador()) { detenerAvisosAdmin(); return; }
+        const version = ++versionAvisosAdmin;
+        const vistos = new Set();
+        // Escucha independiente de la fecha que el administrador esté consultando.
+        const desde = new Date();
+        cancelarAvisosAdmin = onSnapshot(query(collection(db, 'reportes'), where('fecha', '>=', desde)), snapshot => {
+            if (version !== versionAvisosAdmin || !esAdministrador() || snapshot.metadata.fromCache) return;
+            let nuevos = 0;
+            snapshot.docChanges().forEach(cambio => {
+                if (cambio.type !== 'added' || vistos.has(cambio.doc.id) || cambio.doc.metadata.hasPendingWrites) return;
+                vistos.add(cambio.doc.id); nuevos++;
+            });
+            if (nuevos) {
+                document.getElementById('estadoAvisosAdmin').textContent = `${nuevos === 1 ? 'Nuevo reporte recibido' : nuevos + ' reportes nuevos'} · ${new Date().toLocaleTimeString('es-EC')}`;
+                mostrarToast(nuevos === 1 ? '🔔 Nuevo reporte recibido' : `🔔 ${nuevos} reportes nuevos`);
+                sonarAvisoAdmin();
+            }
+        }, () => {
+            if (version !== versionAvisosAdmin) return;
+            detenerAvisosAdmin();
+            document.getElementById('estadoAvisosAdmin').textContent = 'Los avisos se interrumpieron. Se intentará reconectar.';
+            setTimeout(() => { if (esAdministrador()) iniciarAvisosAdmin(); }, 10000);
+        });
+        document.getElementById('estadoAvisosAdmin').textContent = 'Avisos automáticos activos. Si el navegador bloquea el sonido, toca cualquier parte de la página.';
+    } catch (error) {
+        detenerAvisosAdmin();
+        document.getElementById('estadoAvisosAdmin').textContent = 'No se pudo activar el sonido. Intenta nuevamente.';
+    }
+}
+function desbloquearSonidoAdmin() {
+    if (!esAdministrador()) return;
+    iniciarAvisosAdmin();
+    if (audioAvisosAdmin) audioAvisosAdmin.resume().then(() => {
+        if (audioAvisosAdmin?.state === 'running') document.getElementById('estadoAvisosAdmin').textContent = 'Avisos con sonido activos mientras la página esté abierta.';
+    }).catch(() => {});
+}
+document.addEventListener('pointerdown', desbloquearSonidoAdmin);
+document.addEventListener('keydown', desbloquearSonidoAdmin);
 
 function aplicarSnapshotReportes(snapshot) {
     const firmaNueva = snapshot.docs
