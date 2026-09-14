@@ -1,4 +1,4 @@
-const CACHE = "residuos-app-v4";
+const CACHE = "siger-app-v5";
 const ASSETS = [
     "./",
     "./index.html",
@@ -6,7 +6,9 @@ const ASSETS = [
     "./gad-ecuador.js",
     "./fotos-reportes.js",
     "./manifest.webmanifest",
-    "./icon.svg"
+    "./icon-192.png",
+    "./icon-512.png",
+    "./apple-touch-icon.png"
 ];
 
 self.addEventListener("install", (evento) => {
