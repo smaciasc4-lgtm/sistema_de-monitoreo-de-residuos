@@ -1,0 +1,54 @@
+/* Mapa agrupado: cifras legibles, contraste alto y controles táctiles. */
+#modalReporte .cerrar-reporte{width:36px;height:36px;padding:0;margin:0;box-shadow:none;line-height:1;z-index:2}
+.envoltorio-mapa{display:grid;grid-template-rows:auto auto minmax(0,1fr)}
+.envoltorio-mapa .cabecera-mapa{position:static;transform:none;display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;width:auto;max-width:none;padding:12px 20px;border:0;border-radius:0;box-shadow:none;background:#0c201c}
+.envoltorio-mapa #map{min-height:0!important;border-radius:0!important}
+.envoltorio-mapa #diaReportesVisible{font-size:13px}
+.resumen-agrupacion{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px 20px;background:#102c2a;border-bottom:1px solid #285148;text-align:left}
+.resumen-agrupacion strong{display:block;font-size:14px;color:#e4fff0}
+.resumen-agrupacion small{display:block;max-width:420px;margin-top:5px;font-size:12px;line-height:1.45;color:#b0c9c1}
+.resumen-agrupacion button{width:auto;flex-shrink:0;margin:0;padding:11px 15px;background:#522631;color:#ffd5d9;border:1px solid #aa5868;border-radius:12px;box-shadow:none;font-size:13px}
+.resumen-agrupacion button:disabled{background:#243b39;border-color:#4b6660;color:#c5d6d1;cursor:default}
+.siger-cluster,.siger-punto-critico{display:flex;flex-direction:column;justify-content:center;align-items:center;box-sizing:border-box;background:linear-gradient(145deg,#17695f,#0e423e);border:3px solid #a7f3d0;border-radius:50%;color:#fff;box-shadow:0 0 0 5px #0b33352b,0 5px 13px #0005;text-align:center;font-family:Montserrat,Arial,sans-serif}
+.siger-cluster.con-criticos{background:linear-gradient(145deg,#a93548,#672334);border-color:#fecdd3}
+.cluster-cifra{font-size:20px;line-height:1.05;font-weight:800}
+.cluster-etiqueta{font-size:9px;line-height:1.2;margin-top:3px;font-weight:600}
+.siger-punto-critico{border-radius:20px;background:linear-gradient(145deg,#c54454,#7e2539);border:2px solid #ffe4e6;box-shadow:0 0 0 6px #ef444428,0 5px 16px #0005}
+.siger-punto-critico strong{font-size:25px;line-height:1.05}
+.siger-punto-critico>span:last-child{font-size:8px;letter-spacing:.4px;margin-top:3px;font-weight:800}
+.critico-simbolo{position:absolute;right:-7px;top:-7px;display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#fff1f2;color:#922337;border:2px solid #922337;font-weight:900}
+.siger-marcador-individual{background:transparent;border:0}
+.siger-marcador-individual>span{display:block;width:20px;height:20px;margin:2px;border:2px solid white;box-sizing:border-box;border-radius:50%;box-shadow:0 2px 6px #0006}
+.leyenda-agrupado{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:#17695f;border:1px solid #a7f3d0;color:white;font:700 10px Arial;font-style:normal}
+.grupo-eyebrow{color:#fda4af;font-size:11px;font-weight:700;letter-spacing:1.6px;margin:0 0 10px}
+.grupo-badge{display:inline-block;padding:5px 10px;margin-left:5px;background:#552331;color:#fecdd3;border:1px solid #a94860;border-radius:10px;font-size:14px;vertical-align:middle}
+.grupo-explicacion{color:#b6c8d4;line-height:1.65;font-size:13px;margin:12px 0 20px}
+.grupo-acciones{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px}
+.grupo-acciones button{width:auto;margin:0;padding:12px 16px;border-radius:12px;box-shadow:none;font-size:13px}
+.grupo-acciones .grupo-separar{background:#253d4a;color:#e2e8f0;border:1px solid #486371}
+.grupo-reportes,.lista-grupos{display:grid;gap:12px}
+.grupo-reporte{background:#162532;border:1px solid #324452;border-radius:16px;padding:16px}
+.grupo-reporte-cabecera{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.grupo-reporte-cabecera strong{color:#d5f5e3;font-size:13px}
+.grupo-reporte-cabecera span{border-radius:8px;padding:4px 7px;background:#493822;color:#fde68a;font-size:11px}
+.grupo-reporte p{font-size:13px;line-height:1.5;overflow-wrap:anywhere;margin:10px 0;color:#d2dee5}
+.grupo-reporte small{color:#9fb4c1;font-size:11px}
+.grupo-fotos{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.grupo-fotos img{width:76px;height:64px;object-fit:cover;border-radius:9px;border:1px solid #486371}
+.grupo-fotos span{font-size:12px;color:#9fb4c1}
+.grupo-reporte button{width:auto;padding:9px 12px;margin:0;background:#254b44;color:#a7f3d0;border:1px solid #417365;border-radius:9px;box-shadow:none;font-size:12px}
+.tarjeta-grupo{display:flex;align-items:center;gap:16px;text-align:left;width:100%;margin:0;padding:16px;background:#232d3a;border:1px solid #535063;border-radius:15px;color:#f8fafc;box-shadow:none}
+.tarjeta-grupo:hover{background:#303646}
+.tarjeta-grupo strong{display:block;font-size:15px}
+.tarjeta-grupo small{display:block;margin-top:6px;font-size:11px;color:#c2cad4}
+.grupo-numero{display:grid;place-items:center;flex-shrink:0;width:45px;height:45px;border-radius:13px;background:#813044;color:#fff1f2;font-size:23px;font-weight:800}
+.siger-cluster:focus-visible,.siger-punto-critico:focus-visible,.grupo-acciones button:focus-visible,.tarjeta-grupo:focus-visible{outline:3px solid #38bdf8;outline-offset:5px}
+@media(max-width:600px){
+ .envoltorio-mapa{height:72vh!important;min-height:510px!important}
+ .envoltorio-mapa .cabecera-mapa{padding:10px 12px;font-size:11px;max-width:none}
+ .resumen-agrupacion{padding:12px;gap:10px;flex-wrap:wrap}
+ .resumen-agrupacion button{padding:9px 12px;font-size:12px}
+ .grupo-acciones button{width:100%}
+ .grupo-reporte{padding:13px}
+ .grupo-badge{margin:8px 0 0;font-size:13px}
+}

@@ -19,8 +19,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="vendor/MarkerCluster.css">
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <link rel="stylesheet" href="agrupacion-reportes.css">
 </head>
 
 
@@ -257,6 +259,10 @@ multiple>
 <!-- MAPA -->
 <div class="envoltorio-mapa">
     <div class="cabecera-mapa"><span class="titulo-cabecera-mapa">Reportes del día</span><span class="zona-cabecera-mapa">Hora de Ecuador</span></div>
+    <div class="resumen-agrupacion">
+        <div><strong id="resumenReportesMapa">Cargando reportes…</strong><small>Los números reúnen reportes cercanos. Acerca el mapa para verlos.</small></div>
+        <button id="btnVerPuntosCriticos" type="button" onclick="verPuntosCriticos()" disabled>0 puntos críticos · Ver</button>
+    </div>
     <div id="map"></div>
     <div class="leyenda-mapa" aria-label="Leyenda del mapa">
         <span><i class="punto organico"></i> Orgánico</span>
@@ -264,6 +270,7 @@ multiple>
         <span><i class="punto inorganico"></i> Inorgánico</span>
         <span><i class="punto peligroso"></i> Peligroso</span>
         <span><i class="punto critico"></i> Punto crítico</span>
+        <span><i class="leyenda-agrupado">3</i> Grupo de reportes</span>
     </div>
 </div>
 
@@ -619,6 +626,9 @@ Aprende conceptos importantes sobre residuos y cuidado ambiental 🌎
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="gad-ecuador.js"></script>
+    <script src="vendor/leaflet.markercluster.js"></script>
+    <script src="agrupacion-reportes.js"></script>
+    <script src="mapa-reportes.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script src="fotos-reportes.js"></script>
@@ -870,6 +880,7 @@ async function obtenerClienteSupabase() {
 const BUCKET_FOTOS = "fotos-reportes";
 
 onAuthStateChanged(auth, async (user) => {
+    window.cerrarDetalleReporte?.();
     const admin = esAdministrador(user);
     const perfil = document.getElementById("perfilUsuario");
     const nombre = document.getElementById("nombreUsuario");
@@ -935,7 +946,11 @@ map.fitBounds(limitesEcuadorGalapagos, { padding: [18, 18], maxZoom: 5 });
 L.control.zoom({ position: 'bottomright' }).addTo(map);
 
 let capaMunicipios = L.layerGroup().addTo(map);
-let capaReportes = L.layerGroup().addTo(map);
+const vistaReportesMapa = MapaReportes.crear(map, {
+    crearMarcador: crearMarcadorReporte,
+    textoPopup: htmlPopupReporte,
+    onGrupo: verGrupoReportes
+});
 let capaRutas = L.layerGroup().addTo(map);
 
 // Mapa actualizado (CARTO Voyager): calles más claras para seguir rutas.
@@ -1175,7 +1190,7 @@ document.getElementById("cardTotal").innerText =
 total;
 
 document.getElementById("cardCriticos").innerText =
-inorganicos;
+obtenerAgrupacion().criticos.length;
 
 if(inorganicos >= 10){
 
@@ -1355,10 +1370,20 @@ function fechaReporte(reporte) {
     return reporte.fecha?.toDate ? reporte.fecha.toDate() : new Date(reporte.fecha || Date.now());
 }
 
-function prioridadReporte(reporte, todos = reportesActuales) {
-    const cercanos = todos.filter(otro => otro.id !== reporte.id && Math.hypot((reporte.lat - otro.lat) * 111, (reporte.lon - otro.lon) * 111) < 0.8).length;
-    if (reporte.nivel === "Alto" && cercanos > 0) return "Crítica";
-    if (reporte.nivel === "Alto" || (reporte.nivel === "Medio" && cercanos > 1)) return "Alta";
+let baseAgrupacion = null, usuarioAgrupacion = null, cacheAgrupacion = null;
+let grupoDetalleAbierto = null;
+function obtenerAgrupacion() {
+    const identidad = `${auth.currentUser?.uid || ''}:${esAdministrador()}`;
+    if (baseAgrupacion !== reportesActuales || usuarioAgrupacion !== identidad) {
+        baseAgrupacion = reportesActuales;
+        usuarioAgrupacion = identidad;
+        cacheAgrupacion = AgrupacionReportes.agrupar(reportesActuales.filter(r => esAdministrador() || esAutorReporte(r)));
+    }
+    return cacheAgrupacion;
+}
+function prioridadReporte(reporte) {
+    if (obtenerAgrupacion().porReporte.has(reporte.id)) return "Crítica";
+    if (reporte.nivel === "Alto") return "Alta";
     if (reporte.nivel === "Medio") return "Media";
     return "Baja";
 }
@@ -1393,12 +1418,10 @@ function crearMarcadorReporte(reporte) {
             })
         });
     }
-    return L.circleMarker([reporte.lat, reporte.lon], {
-        radius: prioridad === "Alta" ? 12 : 10,
-        fillColor: color,
-        color: "#fff",
-        weight: 2,
-        fillOpacity: 0.9
+    return L.marker([Number(reporte.lat), Number(reporte.lon)], {
+        title: `${reporte.tipo} · ${reporte.estado}`,
+        icon: L.divIcon({className:'siger-marcador-individual',html:`<span style="background:${color}"></span>`,
+            iconSize:[24,24],iconAnchor:[12,12],popupAnchor:[0,-12]})
     });
 }
 
@@ -1489,7 +1512,11 @@ function actualizarContadoresApartados() {
 function renderizarReportes(reportes) {
     const tabla = document.getElementById("tablaReportes");
     tabla.innerHTML = "";
-    capaReportes.clearLayers();
+    vistaReportesMapa.actualizar(reportes, obtenerAgrupacion());
+    if (grupoDetalleAbierto) {
+        if (vistaReportesMapa.grupos.some(g => g.id === grupoDetalleAbierto)) verGrupoReportes(grupoDetalleAbierto);
+        else window.cerrarDetalleReporte();
+    }
 
     if(!reportes.length){
         const configuracion = configuracionApartados[apartadoReportesActual];
@@ -1517,11 +1544,54 @@ function renderizarReportes(reportes) {
             ${usuarioEsAdministrador ? `<select class="selector-estado" aria-label="Cambiar estado del reporte" onchange="actualizarEstadoReporte('${reporte.id}', this.value)">${["Pendiente","En revisión","Atendido","Descartado"].map(estado => `<option ${estado === reporte.estado ? "selected" : ""}>${estado}</option>`).join("")}</select>` : ""}${puedeEliminar ? `<button class="btn-eliminar" type="button" onclick="eliminarRegistro('${reporte.id}')">🗑 Eliminar</button>` : `<span class="reporte-bloqueado" title="Solo el autor o un administrador puede eliminar este reporte">🔒</span>`}${usuarioEsAdministrador && !esAutor ? `<span class="insignia-admin">Administrador</span>` : ""}</div></td>`;
         tabla.appendChild(fila);
 
-        const marcador = crearMarcadorReporte(reporte);
-        const fechaTexto = fechaReporte(reporte).toLocaleString("es-EC", { dateStyle: "short", timeStyle: "short" });
-        marcador.bindPopup(`<b>${escaparHTML(codigoReporte(reporte))}</b><br>${escaparHTML(reporte.tipo)}${reporte.subtipo ? ` · ${escaparHTML(reporte.subtipo)}` : ""} · ${escaparHTML(reporte.nivel)}<br>🏘 ${escaparHTML(reporte.sector)}<br>🕒 ${fechaTexto}<br>👤 ${escaparHTML(reporte.correo)}<br>📌 ${escaparHTML(reporte.estado)}<br><button class="btn-popup" type="button" onclick="verDetalleReporte('${reporte.id}')">Ver detalle</button>${htmlBotonRuta(reporte.lat, reporte.lon)}`);
-        capaReportes.addLayer(marcador);
     });
+}
+
+function htmlPopupReporte(reporte) {
+    const fechaTexto = fechaReporte(reporte).toLocaleString('es-EC', {dateStyle:'short',timeStyle:'short'});
+    return `<b>${escaparHTML(codigoReporte(reporte))}</b><br>${escaparHTML(reporte.tipo)}${reporte.subtipo ? ` · ${escaparHTML(reporte.subtipo)}` : ''} · ${escaparHTML(reporte.nivel)}<br>🏘 ${escaparHTML(reporte.sector)}<br>🕒 ${fechaTexto}<br>👤 ${escaparHTML(reporte.correo)}<br>📌 ${escaparHTML(reporte.estado)}<br><button class="btn-popup" type="button" onclick="verDetalleReporte('${reporte.id}')">Ver detalle</button>${htmlBotonRuta(reporte.lat,reporte.lon)}`;
+}
+
+window.verPuntosCriticos = function() {
+    grupoDetalleAbierto = null;
+    const grupos = vistaReportesMapa.grupos;
+    const contenido = document.getElementById('contenidoDetalleReporte');
+    contenido.innerHTML = `<p class="grupo-eyebrow">ZONAS QUE REQUIEREN ATENCIÓN</p><h2 id="tituloDetalleReporte">Puntos críticos</h2><p class="grupo-explicacion">Al menos 3 reportes activos a un máximo de 100 metros entre sí. Se calculan con los reportes disponibles en esta vista.</p><div class="lista-grupos"></div>`;
+    const lista = contenido.querySelector('.lista-grupos');
+    grupos.forEach(grupo => {
+        const boton = document.createElement('button');
+        boton.className = 'tarjeta-grupo';
+        boton.innerHTML = `<span class="grupo-numero">${grupo.total}</span><span><strong>${escaparHTML(grupo.miembros[0].sector || 'Zona reportada')}</strong><small>${grupo.miembros.length} reporte(s) visibles · Abrir detalle →</small></span>`;
+        boton.addEventListener('click', () => verGrupoReportes(grupo.id));
+        lista.appendChild(boton);
+    });
+    if (!grupos.length) lista.textContent = 'No hay puntos críticos en esta vista.';
+    document.getElementById('modalReporte').hidden = false;
+};
+
+function verGrupoReportes(id) {
+    const grupo = vistaReportesMapa.grupos.find(g => g.id === id);
+    if (!grupo) return;
+    grupoDetalleAbierto = id;
+    const contenido = document.getElementById('contenidoDetalleReporte');
+    contenido.innerHTML = `<p class="grupo-eyebrow">ATENCIÓN PRIORITARIA · 100 M</p><h2 id="tituloDetalleReporte">Punto crítico <span class="grupo-badge">${grupo.total} reportes</span></h2><p class="grupo-explicacion">${escaparHTML(grupo.miembros[0].sector || 'Zona reportada')} · ${grupo.miembros.length} de ${grupo.total} visibles según los filtros. Cada reporte conserva su estado y evidencia.</p><div class="grupo-acciones"><button type="button" class="grupo-separar">Acercar y separar</button>${esAdministrador() ? '<button type="button" class="grupo-ruta">Trazar ruta al punto</button>' : ''}</div><div class="grupo-reportes"></div>`;
+    contenido.querySelector('.grupo-separar').onclick = () => { window.cerrarDetalleReporte(); vistaReportesMapa.separar(id); };
+    const ruta = contenido.querySelector('.grupo-ruta');
+    if (ruta) ruta.onclick = () => {
+        if (!esAdministrador()) return;
+        window.cerrarDetalleReporte();
+        window.trazarRutaHasta(Number(grupo.destino.lat), Number(grupo.destino.lon));
+    };
+    const lista = contenido.querySelector('.grupo-reportes');
+    grupo.miembros.forEach(reporte => {
+        const tarjeta = document.createElement('article');
+        tarjeta.className = 'grupo-reporte';
+        const fotos = (Array.isArray(reporte.fotos) ? reporte.fotos : []).slice(0,3);
+        tarjeta.innerHTML = `<div class="grupo-reporte-cabecera"><strong>${escaparHTML(codigoReporte(reporte))}</strong><span>${escaparHTML(reporte.estado)}</span></div><p>${escaparHTML(reporte.tipo)} · Nivel ${escaparHTML(reporte.nivel)}</p><p>${escaparHTML(reporte.descripcion)}</p><small>${fechaReporte(reporte).toLocaleString('es-EC')}</small><div class="grupo-fotos">${fotos.map(url => `<img src="${escaparHTML(url)}" alt="Evidencia del reporte" loading="lazy">`).join('') || '<span>Sin fotografías</span>'}</div><button type="button">Ver reporte completo</button>`;
+        tarjeta.querySelector('button').onclick = () => window.verDetalleReporte(reporte.id);
+        lista.appendChild(tarjeta);
+    });
+    document.getElementById('modalReporte').hidden = false;
 }
 
 var audioAvisosAdmin = null;
@@ -1684,7 +1754,7 @@ function actualizarEstadisticas() {
     const kpiPeligrosos = document.getElementById("peligrosos");
     if (kpiPeligrosos) kpiPeligrosos.textContent = peligrosos;
     document.getElementById("cardTotal").textContent = total;
-    document.getElementById("cardCriticos").textContent = reportesActuales.filter(r => prioridadReporte(r) === "Crítica").length;
+    document.getElementById("cardCriticos").textContent = obtenerAgrupacion().criticos.length;
     document.getElementById("cardSemana").textContent = reportesActuales.filter(r => fechaReporte(r) >= semana).length;
     document.getElementById("cardPendientes").textContent = pendientes;
     const riesgo = reportesActuales.some(r => prioridadReporte(r) === "Crítica") ? "ALTO" : reportesActuales.some(r => r.nivel === "Medio" || r.nivel === "Alto") ? "MEDIO" : "BAJO";
@@ -1700,7 +1770,7 @@ function actualizarEstadisticas() {
     const kpiSectores = document.getElementById("kpiSectores");
     if (kpiTotal) kpiTotal.textContent = total;
     if (kpiAtendidos) kpiAtendidos.textContent = reportesActuales.filter(r => r.estado === "Atendido").length;
-    if (kpiCriticos) kpiCriticos.textContent = reportesActuales.filter(r => prioridadReporte(r) === "Crítica").length;
+    if (kpiCriticos) kpiCriticos.textContent = obtenerAgrupacion().criticos.length;
     if (kpiSectores) kpiSectores.textContent = new Set(reportesActuales.map(r => (r.sector || "").trim().toLowerCase()).filter(Boolean)).size;
     actualizarGraficos(organicos, inorganicos, reciclables);
 }
@@ -1720,12 +1790,13 @@ function actualizarGraficos(organicos, inorganicos, reciclables) {
 }
 
 window.verDetalleReporte = function(id) {
-    const reporte = reportesActuales.find(r => r.id === id); if (!reporte) return;
+    const reporte = reportesActuales.find(r => r.id === id); if (!reporte || (!esAdministrador() && !esAutorReporte(reporte))) return;
+    grupoDetalleAbierto = null;
     const fotos = (reporte.fotos || []).map(url => `<a href="${escaparHTML(url)}" target="_blank" rel="noopener"><img src="${escaparHTML(url)}" alt="Fotografía del reporte"></a>`).join("") || "<p>Este reporte no tiene fotografías.</p>";
     document.getElementById("contenidoDetalleReporte").innerHTML = `<h2 id="tituloDetalleReporte">${escaparHTML(codigoReporte(reporte))}</h2><p class="detalle-meta">${escaparHTML(reporte.tipo)}${reporte.subtipo ? ` · ${escaparHTML(reporte.subtipo)}` : ""} · ${escaparHTML(reporte.estado)} · Prioridad ${prioridadReporte(reporte)}</p><p>${escaparHTML(reporte.descripcion)}</p><dl><dt>Sector</dt><dd>${escaparHTML(reporte.sector)}</dd><dt>Nivel</dt><dd>${escaparHTML(reporte.nivel)}</dd><dt>Reportado por</dt><dd>${escaparHTML(reporte.correo)}</dd><dt>Fecha</dt><dd>${fechaReporte(reporte).toLocaleString("es-EC")}</dd></dl><div class="galeria-detalle">${fotos}</div>${esAdministrador() ? `<button class="btn-popup btn-ruta" type="button" onclick="cerrarDetalleReporte(); trazarRutaHasta(${Number(reporte.lat)}, ${Number(reporte.lon)})">Cómo llegar a este reporte</button>` : ""}`;
     document.getElementById("modalReporte").hidden = false;
 };
-window.cerrarDetalleReporte = () => document.getElementById("modalReporte").hidden = true;
+window.cerrarDetalleReporte = () => { grupoDetalleAbierto = null; document.getElementById("modalReporte").hidden = true; };
 window.actualizarEstadoReporte = async function(id, estado) {
     if (!esAdministrador()) {
         alert("Solo el administrador puede cambiar el estado de los reportes.");
@@ -1934,7 +2005,7 @@ window.descargarPDF = async function(){
     const ahora = new Date();
     const total = reportesActuales.length;
     const pendientes = reportesActuales.filter(r => r.estado === "Pendiente" || r.estado === "En revisión").length;
-    const criticos = reportesActuales.filter(r => prioridadReporte(r) === "Crítica").length;
+    const criticos = obtenerAgrupacion().criticos.length;
     const conFotos = reportesActuales.filter(r => Array.isArray(r.fotos) && r.fotos.length).length;
     const eco = Math.max(0, 100 - pendientes * 4 - reportesActuales.filter(r => r.nivel === "Alto").length * 6);
     const riesgo = criticos ? "ALTO" : reportesActuales.some(r => r.nivel === "Medio" || r.nivel === "Alto") ? "MEDIO" : "BAJO";
@@ -2010,7 +2081,7 @@ window.descargarPDF = async function(){
         body: [
             ...porEstado.map(([nombre, cantidad]) => [nombre, cantidad, `${total ? Math.round(cantidad * 100 / total) : 0}%`]),
             ...porTipo.map(([nombre, cantidad]) => [nombre, cantidad, `${total ? Math.round(cantidad * 100 / total) : 0}%`]),
-            ["Puntos críticos", criticos, `${total ? Math.round(criticos * 100 / total) : 0}%`],
+            ["Puntos críticos (zonas)", criticos, ""],
             ["Con fotografías", conFotos, `${total ? Math.round(conFotos * 100 / total) : 0}%`],
             ["Riesgo ambiental", riesgo, ""]
         ],

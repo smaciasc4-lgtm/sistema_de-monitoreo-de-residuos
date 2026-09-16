@@ -1,10 +1,15 @@
-const CACHE = "siger-app-v6";
+const CACHE = "siger-app-v7";
 const ASSETS = [
     "./",
     "./index.html",
     "./style.css",
     "./gad-ecuador.js",
     "./fotos-reportes.js",
+    "./agrupacion-reportes.js",
+    "./mapa-reportes.js",
+    "./agrupacion-reportes.css",
+    "./vendor/leaflet.markercluster.js",
+    "./vendor/MarkerCluster.css",
     "./manifest.webmanifest",
     "./icon-192.png",
     "./icon-512.png",
