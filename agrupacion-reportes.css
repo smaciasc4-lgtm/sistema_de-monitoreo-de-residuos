@@ -2,7 +2,7 @@
 #modalReporte .cerrar-reporte{width:36px;height:36px;padding:0;margin:0;box-shadow:none;line-height:1;z-index:2}
 .envoltorio-mapa{display:grid;grid-template-rows:auto auto minmax(0,1fr)}
 .envoltorio-mapa .cabecera-mapa{position:static;transform:none;display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;width:auto;max-width:none;padding:12px 20px;border:0;border-radius:0;box-shadow:none;background:#0c201c}
-.envoltorio-mapa #map{min-height:0!important;border-radius:0!important}
+.envoltorio-mapa #map{grid-row:3;min-height:0!important;border-radius:0!important}
 .envoltorio-mapa #diaReportesVisible{font-size:13px}
 .resumen-agrupacion{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px 20px;background:#102c2a;border-bottom:1px solid #285148;text-align:left}
 .resumen-agrupacion strong{display:block;font-size:14px;color:#e4fff0}
