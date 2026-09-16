@@ -259,7 +259,7 @@ multiple>
 <!-- MAPA -->
 <div class="envoltorio-mapa">
     <div class="cabecera-mapa"><span class="titulo-cabecera-mapa">Reportes del día</span><span class="zona-cabecera-mapa">Hora de Ecuador</span></div>
-    <div class="resumen-agrupacion">
+    <div class="resumen-agrupacion solo-admin-reportes" hidden>
         <div><strong id="resumenReportesMapa">Cargando reportes…</strong><small>Los números reúnen reportes cercanos. Acerca el mapa para verlos.</small></div>
         <button id="btnVerPuntosCriticos" type="button" onclick="verPuntosCriticos()" disabled>0 puntos críticos · Ver</button>
     </div>
@@ -1553,6 +1553,7 @@ function htmlPopupReporte(reporte) {
 }
 
 window.verPuntosCriticos = function() {
+    if (!esAdministrador()) return;
     grupoDetalleAbierto = null;
     const grupos = vistaReportesMapa.grupos;
     const contenido = document.getElementById('contenidoDetalleReporte');

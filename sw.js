@@ -1,4 +1,4 @@
-const CACHE = "siger-app-v7";
+const CACHE = "siger-app-v8";
 const ASSETS = [
     "./",
     "./index.html",

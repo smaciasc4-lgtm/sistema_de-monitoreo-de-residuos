@@ -1,5 +1,7 @@
 android/
 tests/
+output/
+tmp/
 node_modules/
 *.md
 *.sql
